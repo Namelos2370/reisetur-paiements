@@ -3,6 +3,7 @@ import { sb, q } from "../supabase.js";
 import { fcfa, fdate, GLOBAL, STAT, TYPE } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
+import { telechargerRecu } from "../data.js";
 
 const NIVEAUX = ["A1", "A2", "B1", "B2", "C1"];
 
@@ -171,6 +172,7 @@ function Detail({ etudiant, onClose, onChanged }) {
                         {c.statut === "rejete" && <><Badge def={["Rejeté", "bad"]} /><br /><span className="muted">{c.motif}</span></>}
                       </td>
                       <td className="actions">
+                        {c.statut === "valide" && <button className="small" onClick={() => run(() => telechargerRecu(c.id))}>Reçu PDF</button>}
                         {c.bordereau_path && <button className="small" onClick={() => openBordereau(c.bordereau_path)}>Bordereau</button>}
                         {c.statut === "valide" && <button className="small danger" onClick={() => annuler(c.id)}>Annuler</button>}
                       </td>

@@ -8,12 +8,18 @@ import Etudiants from "./pages/Etudiants.jsx";
 import Validations from "./pages/Validations.jsx";
 import Verifier from "./pages/Verifier.jsx";
 import Journal from "./pages/Journal.jsx";
+import Relances from "./pages/Relances.jsx";
+import Exports from "./pages/Exports.jsx";
+import PublicVerifier from "./pages/PublicVerifier.jsx";
+import Password from "./components/Password.jsx";
 
 const TABS = [
   ["dashboard", "Tableau de bord"],
   ["valider", "À valider"],
   ["encaisser", "Nouvel encaissement"],
   ["etudiants", "Étudiants"],
+  ["relances", "Relances"],
+  ["exports", "Exports"],
   ["verifier", "Vérifier un reçu"],
   ["journal", "Journal"],
 ];
@@ -65,6 +71,7 @@ function Login({ message, onDone }) {
 
 function Shell({ onLogout }) {
   const [tab, setTab] = useState("dashboard");
+  const [pwd, setPwd] = useState(false);
   const [preselect, setPreselect] = useState(null);
 
   const goEncaisser = (etudiantId) => {
@@ -76,7 +83,10 @@ function Shell({ onLogout }) {
     <>
       <header className="top">
         <h1>Reisetür 237<small>Gestion des paiements</small></h1>
-        <button className="small" onClick={onLogout}>Déconnexion</button>
+        <div className="actions">
+          <button className="small" onClick={() => setPwd(true)}>Mot de passe</button>
+          <button className="small" onClick={onLogout}>Déconnexion</button>
+        </div>
       </header>
       <nav className="tabs">
         {TABS.map(([id, label]) => (
@@ -90,9 +100,12 @@ function Shell({ onLogout }) {
         {tab === "valider" && <Validations />}
         {tab === "encaisser" && <Encaisser preselect={preselect} />}
         {tab === "etudiants" && <Etudiants onEncaisser={goEncaisser} />}
+        {tab === "relances" && <Relances />}
+        {tab === "exports" && <Exports />}
         {tab === "verifier" && <Verifier />}
         {tab === "journal" && <Journal />}
       </main>
+      {pwd && <Password onClose={() => setPwd(false)} />}
     </>
   );
 }
@@ -126,9 +139,11 @@ function Root() {
 }
 
 export default function App() {
+  // Page publique de vérification d'un reçu (sans connexion) : /verifier
+  const publique = window.location.pathname.replace(/\/+$/, "") === "/verifier";
   return (
     <ToastProvider>
-      <Root />
+      {publique ? <PublicVerifier /> : <Root />}
     </ToastProvider>
   );
 }

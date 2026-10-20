@@ -35,3 +35,14 @@ src/
   components/ui.jsx  toast, modal, hooks
   pages/             Dashboard, Encaisser, Etudiants, Verifier, Journal
 ```
+
+## Fonctions avancées
+- **Reçu PDF** : bouton « Reçu PDF » après chaque validation (et dans la fiche étudiant). En-tête de l'école, n° de reçu, montant, reste à payer, signature de la direction, lien de vérification.
+- **Relances** : liste des impayés par classe (échéance dépassée / à venir), message WhatsApp prêt à envoyer, **note de rappel imprimable** (une page par étudiant, ou toute la classe d'un coup).
+- **Exports Excel** : global, par classe (une feuille par classe) et par mois.
+- **Vérification publique** : `https://ton-site/verifier?n=RT237-2026-0001`. L'étudiant doit saisir le n° de reçu **et** son nom ; aucune autre donnée n'est exposée.
+- **Mot de passe** : bouton « Mot de passe » en haut à droite.
+
+## Personnaliser les documents
+- Texte de l'en-tête et signature : `src/config.js` (nom, sous-titre, adresse, contact, nom de la direction).
+- Logo : dépose un fichier `public/logo.png`, il apparaît automatiquement sur les reçus et les notes.

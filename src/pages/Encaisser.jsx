@@ -2,26 +2,7 @@ import { useEffect, useState } from "react";
 import { sb, q } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
 import { Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
-
-function Receipt({ r }) {
-  return (
-    <div className="print-only">
-      <h1>Reisetür 237</h1>
-      <p>Reçu de paiement</p>
-      <h2 style={{ fontSize: "20pt" }}>N° {r.numero_recu}</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <tbody>
-          <tr><td>Étudiant</td><td><b>{r.etudiant.nom}</b> (niveau {r.etudiant.niveau})</td></tr>
-          <tr><td>Objet</td><td>{TYPE[r.tranche.type]} — tranche {r.tranche.numero}</td></tr>
-          <tr><td>Montant</td><td><b>{fcfa(r.montant)}</b></td></tr>
-          <tr><td>Date du versement</td><td>{fdate(r.date_paiement)}</td></tr>
-          <tr><td>Réf. bancaire</td><td>{r.reference_banque || "—"}</td></tr>
-        </tbody>
-      </table>
-      <p style={{ marginTop: 40 }}>Reçu valable après validation par Reisetür 237.</p>
-    </div>
-  );
-}
+import { telechargerRecu } from "../data.js";
 
 export default function Encaisser({ preselect }) {
   const notify = useToast();
@@ -119,9 +100,8 @@ export default function Encaisser({ preselect }) {
           </p>
           <div className="actions">
             <button className="small" onClick={() => navigator.clipboard?.writeText(last.numero_recu).then(() => notify("Numéro copié."))}>Copier le numéro</button>
-            <button className="small" onClick={() => window.print()}>Imprimer le reçu</button>
+            <button className="small primary" disabled={busy} onClick={() => run(() => telechargerRecu(last.id))}>Reçu PDF</button>
           </div>
-          <Receipt r={last} />
         </div>
       )}
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { sb, q } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { telechargerRecu } from "../data.js";
 
 function ValiderModal({ item, onClose, onDone }) {
   const notify = useToast();
@@ -35,7 +36,7 @@ function ValiderModal({ item, onClose, onDone }) {
           .single()
       );
       notify(`Paiement validé — reçu ${row.numero_recu}`);
-      onDone(row);
+      onDone({ ...row, nom: item.nom, classe: item.classe, type: item.type, numero: item.numero });
     });
   };
 
@@ -89,6 +90,8 @@ export default function Validations() {
   const [search, setSearch] = useState("");
   const [classe, setClasse] = useState("");
   const [open, setOpen] = useState(null);
+  const [done, setDone] = useState(null);
+  const [pdfRun, pdfBusy] = useAction();
 
   if (!st.data) return <Loading state={st} />;
 
@@ -111,6 +114,18 @@ export default function Validations() {
   return (
     <>
       <h2>Paiements à valider</h2>
+      {done && (
+        <div className="card success">
+          <b>✔ Paiement validé</b>
+          <div className="recu-big">{done.numero_recu}</div>
+          <p>{done.nom} — {TYPE[done.type]}, tranche {done.numero} — <b>{fcfa(done.montant)}</b><br />
+            <span className="muted">Remets ce numéro de reçu à l'étudiant.</span></p>
+          <div className="actions">
+            <button className="small primary" disabled={pdfBusy} onClick={() => pdfRun(() => telechargerRecu(done.id))}>Reçu PDF</button>
+            <button className="small" onClick={() => setDone(null)}>Fermer</button>
+          </div>
+        </div>
+      )}
       <p className="muted">
         Paiements repris du fichier Excel. Valide-les un par un avec le reçu de la banque : ils comptent dans les totaux « encaissé » seulement après validation.
       </p>
@@ -148,7 +163,7 @@ export default function Validations() {
         )}
       </div>
 
-      {open && <ValiderModal item={open} onClose={() => setOpen(null)} onDone={() => { setOpen(null); st.reload(); }} />}
+      {open && <ValiderModal item={open} onClose={() => setOpen(null)} onDone={(row) => { setOpen(null); setDone(row); st.reload(); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     </>
   );
 }
