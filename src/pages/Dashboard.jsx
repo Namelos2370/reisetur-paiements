@@ -2,7 +2,7 @@ import { sb, q } from "../supabase.js";
 import { fcfa, fdate, nombre, TYPE } from "../utils.js";
 import { Loading, useLoad } from "../components/ui.jsx";
 
-export default function Dashboard() {
+export default function Dashboard({ onValider }) {
   const st = useLoad(
     async () => {
       const [d, retards] = await Promise.all([
@@ -30,6 +30,12 @@ export default function Dashboard() {
           <div className="l">Tranches en retard</div>
           <div className="v">{d.nb_tranches_en_retard}</div>
           <div className="muted">{fcfa(d.montant_en_retard)}</div>
+        </div>
+        <div className="stat">
+          <div className="l">Paiements à valider</div>
+          <div className="v">{d.nb_a_valider}</div>
+          <div className="muted">{fcfa(d.montant_a_valider)}</div>
+          {d.nb_a_valider > 0 && <button className="small primary" style={{ marginTop: 8 }} onClick={onValider}>Valider</button>}
         </div>
         <div className="stat"><div className="l">Étudiants</div><div className="v">{d.nb_etudiants}</div></div>
       </div>

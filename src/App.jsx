@@ -5,12 +5,14 @@ import { ToastProvider, useAction, useToast } from "./components/ui.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Encaisser from "./pages/Encaisser.jsx";
 import Etudiants from "./pages/Etudiants.jsx";
+import Validations from "./pages/Validations.jsx";
 import Verifier from "./pages/Verifier.jsx";
 import Journal from "./pages/Journal.jsx";
 
 const TABS = [
   ["dashboard", "Tableau de bord"],
-  ["encaisser", "Valider un encaissement"],
+  ["valider", "À valider"],
+  ["encaisser", "Nouvel encaissement"],
   ["etudiants", "Étudiants"],
   ["verifier", "Vérifier un reçu"],
   ["journal", "Journal"],
@@ -84,7 +86,8 @@ function Shell({ onLogout }) {
         ))}
       </nav>
       <main>
-        {tab === "dashboard" && <Dashboard />}
+        {tab === "dashboard" && <Dashboard onValider={() => setTab("valider")} />}
+        {tab === "valider" && <Validations />}
         {tab === "encaisser" && <Encaisser preselect={preselect} />}
         {tab === "etudiants" && <Etudiants onEncaisser={goEncaisser} />}
         {tab === "verifier" && <Verifier />}

@@ -41,9 +41,13 @@ export default function Encaisser({ preselect }) {
 
   async function loadTranches(id) {
     if (!id) { setTranches([]); setTrId(""); setMontant(""); return; }
-    const data = await q(
+    // "solde" = reste réellement disponible : on retire les paiements déjà saisis mais pas encore validés
+    const rows = await q(
       sb.from("v_tranches").select("*").eq("etudiant_id", id).gt("solde", 0).order("frais_id").order("numero")
     );
+    const data = rows
+      .map((t) => ({ ...t, attente: t.a_valider, solde: t.solde - t.a_valider }))
+      .filter((t) => t.solde > 0);
     setTranches(data);
     setTrId(data[0]?.id || "");
     setMontant(data[0] ? String(data[0].solde) : "");
@@ -102,7 +106,7 @@ export default function Encaisser({ preselect }) {
 
   return (
     <>
-      <h2>Valider un encaissement</h2>
+      <h2>Nouvel encaissement</h2>
 
       {last && (
         <div className="card success">
@@ -134,7 +138,7 @@ export default function Encaisser({ preselect }) {
           {etuId && !tranches.length && <option value="">Aucune tranche à payer</option>}
           {tranches.map((t) => (
             <option key={t.id} value={t.id}>
-              {TYPE[t.type]} — tranche {t.numero} — reste {fcfa(t.solde)} (avant le {fdate(t.date_limite)})
+              {TYPE[t.type]} — tranche {t.numero} — reste {fcfa(t.solde)}{t.attente > 0 ? ` (+ ${fcfa(t.attente)} à valider)` : ""} (avant le {fdate(t.date_limite)})
             </option>
           ))}
         </select>

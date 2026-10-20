@@ -74,7 +74,7 @@ export default function ImportEtudiants({ onDone }) {
     const raw = map.niveau >= 0 ? String(r[map.niveau] ?? "").toUpperCase().replace(/\s/g, "") : "";
     const niveau = NIVEAUX.includes(raw) ? raw : defNiveau;
     return { nom, telephone: tel || null, niveau };
-  }).filter((x) => x.nom);
+  }).filter((x) => /\p{L}{2,}/u.test(x.nom) && !/^(total|niveau\s*:)/i.test(x.nom) && !x.nom.includes("|"));
 
   const submit = () =>
     run(async () => {

@@ -12,11 +12,12 @@ function NouvelEtudiant({ onAdded }) {
   const [nom, setNom] = useState("");
   const [tel, setTel] = useState("");
   const [niveau, setNiveau] = useState("A1");
+  const [classe, setClasse] = useState("");
 
   const submit = (e) => {
     e.preventDefault();
     run(async () => {
-      await q(sb.from("etudiants").insert({ nom: nom.trim(), telephone: tel.trim() || null, niveau }));
+      await q(sb.from("etudiants").insert({ nom: nom.trim(), telephone: tel.trim() || null, niveau, classe: classe.trim() || null }));
       setNom(""); setTel("");
       notify("Étudiant ajouté.");
       onAdded();
@@ -30,10 +31,18 @@ function NouvelEtudiant({ onAdded }) {
         <div><label htmlFor="n-nom">Nom complet</label><input id="n-nom" required value={nom} onChange={(e) => setNom(e.target.value)} /></div>
         <div><label htmlFor="n-tel">Téléphone</label><input id="n-tel" type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} /></div>
       </div>
-      <label htmlFor="n-niv">Niveau</label>
-      <select id="n-niv" value={niveau} onChange={(e) => setNiveau(e.target.value)}>
-        {NIVEAUX.map((n) => <option key={n}>{n}</option>)}
-      </select>
+      <div className="row">
+        <div>
+          <label htmlFor="n-niv">Niveau</label>
+          <select id="n-niv" value={niveau} onChange={(e) => setNiveau(e.target.value)}>
+            {NIVEAUX.map((n) => <option key={n}>{n}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="n-cl">Classe</label>
+          <input id="n-cl" placeholder="ex. A1 Clausthal" value={classe} onChange={(e) => setClasse(e.target.value)} />
+        </div>
+      </div>
       <button className="primary" style={{ marginTop: 18 }} disabled={busy}>Ajouter</button>
     </form>
   );
@@ -115,7 +124,7 @@ function Detail({ etudiant, onClose, onChanged }) {
   return (
     <Modal onClose={onClose}>
       <div className="between">
-        <h2>{etudiant.nom} <Badge>{etudiant.niveau}</Badge></h2>
+        <h2>{etudiant.nom} <Badge>{etudiant.niveau}</Badge>{etudiant.classe && <> <Badge>{etudiant.classe}</Badge></>}</h2>
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
       <p className="muted">{etudiant.telephone || "Pas de téléphone"}</p>
@@ -153,13 +162,13 @@ function Detail({ etudiant, onClose, onChanged }) {
                 <tbody>
                   {st.data.encs.map((c) => (
                     <tr key={c.id}>
-                      <td><b>{c.numero_recu}</b><br /><span className="muted">{c.reference_banque || ""}</span></td>
+                      <td>{c.numero_recu ? <b>{c.numero_recu}</b> : <span className="muted">Sans n° de reçu</span>}<br /><span className="muted">{c.reference_banque || ""}</span></td>
                       <td>{fdate(c.date_paiement)}</td>
                       <td>{fcfa(c.montant)}<br /><span className="muted">{TYPE[c.tranches.frais.type]} T{c.tranches.numero}</span></td>
                       <td>
-                        {c.statut === "valide" ? <Badge def={["Validé", "ok"]} /> : (
-                          <><Badge def={["Rejeté", "bad"]} /><br /><span className="muted">{c.motif}</span></>
-                        )}
+                        {c.statut === "valide" && <Badge def={["Validé", "ok"]} />}
+                        {c.statut === "en_attente" && <Badge def={["À valider", "warn"]} />}
+                        {c.statut === "rejete" && <><Badge def={["Rejeté", "bad"]} /><br /><span className="muted">{c.motif}</span></>}
                       </td>
                       <td className="actions">
                         {c.bordereau_path && <button className="small" onClick={() => openBordereau(c.bordereau_path)}>Bordereau</button>}
@@ -186,27 +195,37 @@ export default function Etudiants({ onEncaisser }) {
     return { etus, frais };
   }, []);
   const [search, setSearch] = useState("");
+  const [classe, setClasse] = useState("");
   const [open, setOpen] = useState(null);
 
   if (!st.data) return <Loading state={st} />;
 
   const byE = {};
   st.data.frais.forEach((f) => (byE[f.etudiant_id] ||= []).push(f));
-  const list = st.data.etus.filter((e) => e.nom.toLowerCase().includes(search.toLowerCase()));
+  const classes = [...new Set(st.data.etus.map((e) => e.classe).filter(Boolean))].sort();
+  const list = st.data.etus.filter(
+    (e) => e.nom.toLowerCase().includes(search.toLowerCase()) && (!classe || e.classe === classe)
+  );
 
   return (
     <>
       <h2>Étudiants</h2>
       <ImportEtudiants onDone={st.reload} />
       <NouvelEtudiant onAdded={st.reload} />
-      <input placeholder="Rechercher un étudiant…" style={{ marginBottom: 16 }} value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="row" style={{ marginBottom: 16 }}>
+        <input placeholder="Rechercher un étudiant…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select value={classe} onChange={(e) => setClasse(e.target.value)}>
+          <option value="">Toutes les classes</option>
+          {classes.map((c) => <option key={c}>{c}</option>)}
+        </select>
+      </div>
 
       {!list.length && <p className="muted">Aucun étudiant.</p>}
       {list.map((e) => (
         <div className="card" key={e.id}>
           <div className="between">
             <div>
-              <b style={{ fontSize: "1.1rem" }}>{e.nom}</b> <Badge>{e.niveau}</Badge>
+              <b style={{ fontSize: "1.1rem" }}>{e.nom}</b> <Badge>{e.niveau}</Badge>{e.classe && <> <Badge>{e.classe}</Badge></>}
               <br /><span className="muted">{e.telephone || "Pas de téléphone"}</span>
             </div>
             <div className="actions">
@@ -217,6 +236,7 @@ export default function Etudiants({ onEncaisser }) {
           {(byE[e.id] || []).map((f) => (
             <p key={f.id} style={{ margin: "12px 0 0" }}>
               {TYPE[f.type]} : {fcfa(f.paye)} / {fcfa(f.montant_total)} <Badge def={GLOBAL[f.statut_global]} />
+              {f.a_valider > 0 && <span className="muted"> · {fcfa(f.a_valider)} à valider</span>}
             </p>
           ))}
           {!byE[e.id] && <p className="muted" style={{ margin: "12px 0 0" }}>Aucun frais défini.</p>}
