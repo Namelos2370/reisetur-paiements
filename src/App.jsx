@@ -73,7 +73,7 @@ function Shell({ onLogout }) {
   return (
     <>
       <header className="top">
-        <h1>Reisetür 237<small>Validation des encaissements</small></h1>
+        <h1>Reisetür 237<small>Gestion des paiements</small></h1>
         <button className="small" onClick={onLogout}>Déconnexion</button>
       </header>
       <nav className="tabs">
