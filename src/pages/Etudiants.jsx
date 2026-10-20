@@ -2,6 +2,7 @@ import { useState } from "react";
 import { sb, q } from "../supabase.js";
 import { fcfa, fdate, GLOBAL, STAT, TYPE } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
+import ImportEtudiants from "../components/ImportEtudiants.jsx";
 
 const NIVEAUX = ["A1", "A2", "B1", "B2", "C1"];
 
@@ -196,6 +197,7 @@ export default function Etudiants({ onEncaisser }) {
   return (
     <>
       <h2>Étudiants</h2>
+      <ImportEtudiants onDone={st.reload} />
       <NouvelEtudiant onAdded={st.reload} />
       <input placeholder="Rechercher un étudiant…" style={{ marginBottom: 16 }} value={search} onChange={(e) => setSearch(e.target.value)} />
 
