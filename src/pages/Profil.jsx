@@ -108,6 +108,43 @@ function Ecole({ initial, onSaved }) {
   );
 }
 
+function Tarifs() {
+  const notify = useToast();
+  const [run, busy] = useAction();
+  const st = useLoad(() => q(sb.from("tarifs_niveau").select("*").order("niveau")), []);
+  const [f, setF] = useState(null);
+  const rows = f || (st.data || []).map((r) => ({ ...r, scolarite_t1: r.scolarite_t1 ?? "", scolarite_t2: r.scolarite_t2 ?? "" }));
+  const set = (i, k) => (e) => setF(rows.map((r, j) => (j === i ? { ...r, [k]: e.target.value } : r)));
+
+  if (!st.data) return <Loading state={st} />;
+  const save = (e) => {
+    e.preventDefault();
+    run(async () => {
+      for (const r of rows) {
+        await q(sb.from("tarifs_niveau").update({
+          scolarite_t1: r.scolarite_t1 === "" ? null : +r.scolarite_t1,
+          scolarite_t2: r.scolarite_t2 === "" ? null : +r.scolarite_t2,
+          updated_at: new Date().toISOString(),
+        }).eq("niveau", r.niveau));
+      }
+      notify("Tarifs enregistrés.");
+    });
+  };
+  return (
+    <form className="card" onSubmit={save}>
+      <h3 style={{ marginTop: 0 }}>Tarifs de scolarité par niveau</h3>
+      <p className="muted">Montants proposés automatiquement quand un étudiant passe au niveau supérieur (2 tranches, en FCFA). Tu pourras toujours les ajuster pour un étudiant.</p>
+      {rows.map((r, i) => (
+        <div className="row" key={r.niveau}>
+          <div><label htmlFor={`t1-${r.niveau}`}>{r.niveau} — tranche 1</label><input id={`t1-${r.niveau}`} type="number" min="1" value={r.scolarite_t1} onChange={set(i, "scolarite_t1")} /></div>
+          <div><label htmlFor={`t2-${r.niveau}`}>{r.niveau} — tranche 2</label><input id={`t2-${r.niveau}`} type="number" min="1" value={r.scolarite_t2} onChange={set(i, "scolarite_t2")} /></div>
+        </div>
+      ))}
+      <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Enregistrer les tarifs</button>
+    </form>
+  );
+}
+
 export default function Profil({ onEcole }) {
   const st = useLoad(async () => {
     const [{ data: { user } }, ecole] = await Promise.all([
@@ -122,6 +159,7 @@ export default function Profil({ onEcole }) {
       <h2>Mon profil</h2>
       <Compte user={st.data.user} />
       <MotDePasse />
+      <Tarifs />
       <Ecole initial={st.data.ecole} onSaved={(row) => { appliquerEcole(row); onEcole(row); }} />
     </>
   );

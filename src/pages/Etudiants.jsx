@@ -1,11 +1,86 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { fcfa, fdate, GLOBAL, STAT, TYPE } from "../utils.js";
+import { fcfa, fdate, GLOBAL, STAT, TYPE, today } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu } from "../data.js";
 
 const NIVEAUX = ["A1", "A2", "B1", "B2", "C1"];
+
+function PasserNiveau({ etudiant, onClose, onDone }) {
+  const notify = useToast();
+  const [run, busy] = useAction();
+  const suivants = NIVEAUX.slice(NIVEAUX.indexOf(etudiant.niveau) + 1);
+  const info = useLoad(async () => {
+    const [tarifs, frais] = await Promise.all([
+      q(sb.from("tarifs_niveau").select("*")),
+      q(sb.from("v_frais").select("solde,a_valider").eq("etudiant_id", etudiant.id)),
+    ]);
+    return { tarifs, impaye: frais.reduce((s, f) => s + Math.max(0, f.solde - f.a_valider), 0) };
+  }, [etudiant.id]);
+  const [niveau, setNiveau] = useState(suivants[0]);
+  const [classe, setClasse] = useState("");
+  const [date, setDate] = useState(today());
+  const [f, setF] = useState({ m1: null, d1: "", m2: null, d2: "" });
+  const tarif = info.data?.tarifs.find((t) => t.niveau === niveau);
+  const m1 = f.m1 ?? tarif?.scolarite_t1 ?? "";
+  const m2 = f.m2 ?? tarif?.scolarite_t2 ?? "";
+
+  const submit = (e) => {
+    e.preventDefault();
+    run(async () => {
+      if (f.d2 < f.d1) return notify("La tranche 2 doit être après la tranche 1.", true);
+      await q(sb.rpc("passer_niveau", {
+        p_etudiant: etudiant.id, p_niveau: niveau, p_classe: classe, p_date: date,
+        p_t1: +m1, p_d1: f.d1, p_t2: +m2, p_d2: f.d2,
+      }));
+      notify(`${etudiant.nom} passe en ${niveau}.`);
+      onDone();
+    });
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="between">
+        <h2>Passage au niveau supérieur</h2>
+        <button className="small" onClick={onClose}>Fermer</button>
+      </div>
+      <p><b>{etudiant.nom}</b> — {etudiant.niveau}{etudiant.classe ? ` (${etudiant.classe})` : ""}</p>
+      {!info.data ? <Loading state={info} /> : (
+        <form onSubmit={submit}>
+          {info.data.impaye > 0 && (
+            <p className="badge warn" style={{ display: "block" }}>
+              Attention : il reste {fcfa(info.data.impaye)} à payer sur les niveaux précédents. Ils restent dus et restent visibles dans les relances.
+            </p>
+          )}
+          <p className="muted">Réservé aux étudiants ayant réussi leur niveau. L'historique (reçus, frais, classe) du niveau actuel est conservé tel quel.</p>
+          <div className="row">
+            <div>
+              <label htmlFor="pn-niv">Nouveau niveau</label>
+              <select id="pn-niv" value={niveau} onChange={(e) => { setNiveau(e.target.value); setF((s) => ({ ...s, m1: null, m2: null })); }}>
+                {suivants.map((n) => <option key={n}>{n}</option>)}
+              </select>
+            </div>
+            <div><label htmlFor="pn-cl">Nouvelle classe</label><input id="pn-cl" placeholder="ex. B1 Clausthal" value={classe} onChange={(e) => setClasse(e.target.value)} /></div>
+          </div>
+          <label htmlFor="pn-dt">Date du passage</label>
+          <input id="pn-dt" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+          <h3>Scolarité {niveau} (2 tranches)</h3>
+          {!tarif?.scolarite_t1 && <p className="muted">Aucun tarif défini pour {niveau} : saisis-le ici (ou dans Mon profil → Tarifs).</p>}
+          <div className="row">
+            <div><label htmlFor="pn-m1">Tranche 1 — montant (FCFA)</label><input id="pn-m1" type="number" min="1" required value={m1} onChange={(e) => setF((s) => ({ ...s, m1: e.target.value }))} /></div>
+            <div><label htmlFor="pn-d1">Tranche 1 — date limite</label><input id="pn-d1" type="date" required value={f.d1} onChange={(e) => setF((s) => ({ ...s, d1: e.target.value }))} /></div>
+          </div>
+          <div className="row">
+            <div><label htmlFor="pn-m2">Tranche 2 — montant (FCFA)</label><input id="pn-m2" type="number" min="1" required value={m2} onChange={(e) => setF((s) => ({ ...s, m2: e.target.value }))} /></div>
+            <div><label htmlFor="pn-d2">Tranche 2 — date limite</label><input id="pn-d2" type="date" required value={f.d2} onChange={(e) => setF((s) => ({ ...s, d2: e.target.value }))} /></div>
+          </div>
+          <button className="primary block" disabled={busy}>Confirmer le passage en {niveau}</button>
+        </form>
+      )}
+    </Modal>
+  );
+}
 
 function NouvelEtudiant({ onAdded }) {
   const notify = useToast();
@@ -91,16 +166,18 @@ function NouveauxFrais({ etudiantId, onCreated }) {
 
 function Detail({ etudiant, onClose, onChanged }) {
   const notify = useToast();
+  const [passage, setPassage] = useState(false);
   const [run] = useAction();
   const st = useLoad(async () => {
-    const [trs, encs] = await Promise.all([
+    const [trs, encs, parcours] = await Promise.all([
       q(sb.from("v_tranches").select("*").eq("etudiant_id", etudiant.id).order("frais_id").order("numero")),
       q(sb.from("encaissements")
         .select("*, tranches!inner(numero, frais!inner(type, etudiant_id))")
         .eq("tranches.frais.etudiant_id", etudiant.id)
         .order("created_at", { ascending: false })),
+      q(sb.from("parcours").select("*").eq("etudiant_id", etudiant.id).order("date_debut")),
     ]);
-    return { trs, encs };
+    return { trs, encs, parcours };
   }, [etudiant.id]);
 
   const refresh = () => { st.reload(); onChanged(); };
@@ -129,18 +206,23 @@ function Detail({ etudiant, onClose, onChanged }) {
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
       <p className="muted">{etudiant.telephone || "Pas de téléphone"}</p>
+      {etudiant.niveau !== "C1" && <button className="small primary" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}
 
       {!st.data ? <Loading state={st} /> : (
         <>
+          {st.data.parcours.length > 1 && (
+            <p className="muted">Parcours : {st.data.parcours.map((p) => `${p.niveau}${p.classe ? ` (${p.classe})` : ""}`).join(" → ")}</p>
+          )}
           <h3>Tranches</h3>
           <div className="tablewrap">
             {st.data.trs.length ? (
               <table>
-                <thead><tr><th>Frais</th><th>Échéance</th><th>Dû</th><th>Payé</th><th>Statut</th></tr></thead>
+                <thead><tr><th>Frais</th><th>Niveau</th><th>Échéance</th><th>Dû</th><th>Payé</th><th>Statut</th></tr></thead>
                 <tbody>
                   {st.data.trs.map((t) => (
                     <tr key={t.id}>
                       <td>{TYPE[t.type]} T{t.numero}</td>
+                      <td>{t.niveau}</td>
                       <td>{fdate(t.date_limite)}</td>
                       <td>{fcfa(t.montant_du)}</td>
                       <td>{fcfa(t.paye)}</td>
@@ -184,6 +266,7 @@ function Detail({ etudiant, onClose, onChanged }) {
           </div>
         </>
       )}
+      {passage && <PasserNiveau etudiant={etudiant} onClose={() => setPassage(false)} onDone={() => { setPassage(false); onChanged(); onClose(); }} />}
     </Modal>
   );
 }

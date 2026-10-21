@@ -17,8 +17,8 @@ export async function chargerRecu(encaissementId) {
     date_paiement: c.date_paiement,
     reference_banque: c.reference_banque,
     nom: e.nom,
-    classe: e.classe,
-    niveau: e.niveau,
+    classe: t.etudiant_classe ?? e.classe, // niveau/classe de l'époque du paiement
+    niveau: t.niveau ?? e.niveau,
     type: t.type,
     tranche: t.numero,
     reste: frais[0]?.solde ?? 0,
