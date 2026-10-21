@@ -1,5 +1,5 @@
-// Informations de l'école affichées sur les reçus et les notes imprimées.
-// Modifie ces lignes pour personnaliser l'en-tête et la signature.
+// Valeurs par défaut des informations de l'école (modifiables ensuite dans « Mon profil »).
+
 //
 // Logo (facultatif) : place un fichier  public/logo.png  dans le projet,
 // il apparaîtra automatiquement en haut à gauche des documents.
@@ -12,3 +12,14 @@ export const ECOLE = {
   direction: "La Direction",
   directeur: "", // nom affiché sous la ligne de signature (facultatif)
 };
+
+// Les valeurs ci-dessus sont les valeurs par défaut ; une fois connecté, les paramètres
+// enregistrés dans « Mon profil » (table ecole_parametres) les remplacent.
+export function appliquerEcole(row) {
+  if (!row) return ECOLE;
+  Object.assign(ECOLE, {
+    nom: row.nom, sousTitre: row.sous_titre, adresse: row.adresse, contact: row.contact,
+    ville: row.ville, direction: row.direction, directeur: row.directeur,
+  });
+  return ECOLE;
+}

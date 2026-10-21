@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE } from "../config.js";
 import { fcfa, fdate, TYPE } from "../utils.js";
@@ -11,6 +11,8 @@ export default function PublicVerifier() {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState(null); // null | "introuvable" | objet
   const [err, setErr] = useState("");
+  const [nomCentre, setNomCentre] = useState(ECOLE.nom);
+  useEffect(() => { sb.rpc("ecole_nom").then(({ data }) => data && setNomCentre(data)); }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -23,7 +25,8 @@ export default function PublicVerifier() {
 
   return (
     <div className="center card">
-      <h2 style={{ color: "var(--brand)", marginBottom: 4 }}>{ECOLE.nom}</h2>
+      <img src="/logo.png" alt="" style={{ height: 90, display: "block", margin: "0 auto 8px" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+      <h2 style={{ color: "var(--brand)", marginBottom: 4 }}>{nomCentre}</h2>
       <p className="muted" style={{ marginTop: 0 }}>Vérification d'un reçu de paiement</p>
 
       <form onSubmit={submit}>
@@ -46,7 +49,7 @@ export default function PublicVerifier() {
       {res && res !== "introuvable" && res.statut === "rejete" && (
         <div style={{ marginTop: 20 }}>
           <Badge def={["Reçu annulé", "bad"]} />
-          <p className="muted">Ce reçu a été annulé par l'administration. Contacte {ECOLE.nom}.</p>
+          <p className="muted">Ce reçu a été annulé par l'administration. Contacte {nomCentre}.</p>
         </div>
       )}
 

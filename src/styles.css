@@ -7,8 +7,17 @@
 html { font-size: 17px; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
 header.top { background: var(--brand); color: #fff; padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-header.top h1 { margin: 0; font-size: 1.2rem; letter-spacing: .2px; }
-header.top small { opacity: .8; display: block; font-weight: 400; }
+header.top { position: relative; justify-content: flex-start; padding: 10px 20px; }
+header.top .brand { display: flex; align-items: center; gap: 12px; background: transparent; color: #fff; border: 0; padding: 4px 8px 4px 4px; border-radius: 12px; cursor: pointer; text-align: left; font: inherit; }
+header.top .brand:hover, header.top .brand[aria-expanded="true"] { background: rgba(255,255,255,.14); }
+header.top .brand img { height: 52px; width: 52px; object-fit: contain; background: #fff; border-radius: 10px; padding: 2px; }
+header.top .brand-t { font-size: 1.2rem; font-weight: 700; letter-spacing: .2px; line-height: 1.25; }
+header.top small { opacity: .8; display: block; font-weight: 400; font-size: .8rem; }
+header.top .caret { opacity: .8; font-size: .9rem; }
+header.top .menu { position: absolute; top: calc(100% - 4px); left: 16px; z-index: 20; min-width: 230px; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(11,35,80,.22); padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+header.top .menu button { background: transparent; border: 0; text-align: left; padding: 11px 12px; border-radius: 8px; font: inherit; color: var(--ink); cursor: pointer; }
+header.top .menu button:hover, header.top .menu button.active { background: var(--neutral-bg); }
+header.top .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
 nav.tabs { display: flex; gap: 8px; padding: 14px 20px; background: #fff; border-bottom: 1px solid var(--line); overflow-x: auto; position: sticky; top: 0; z-index: 5; }
 nav.tabs button { white-space: nowrap; }
 main { max-width: 1000px; margin: 0 auto; padding: 24px 20px 80px; }

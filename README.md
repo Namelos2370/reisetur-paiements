@@ -41,8 +41,9 @@ src/
 - **Relances** : liste des impayés par classe (échéance dépassée / à venir), message WhatsApp prêt à envoyer, **note de rappel imprimable** (une page par étudiant, ou toute la classe d'un coup).
 - **Exports Excel** : global, par classe (une feuille par classe) et par mois.
 - **Vérification publique** : `https://ton-site/verifier?n=RT237-2026-0001`. L'étudiant doit saisir le n° de reçu **et** son nom ; aucune autre donnée n'est exposée.
-- **Mot de passe** : bouton « Mot de passe » en haut à droite.
+- **Navigation** : seuls les onglets essentiels sont visibles (Tableau de bord, À valider, Nouvel encaissement, Étudiants). Clique sur le **logo / nom du centre** pour ouvrir le menu : Relances, Exports, Vérifier un reçu, Journal, Mon profil, Déconnexion.
+- **Mon profil** : mes informations, changement de mot de passe, et informations du centre (nom, adresse, contact, ville, signature) utilisées sur les PDF et WhatsApp.
 
 ## Personnaliser les documents
-- Texte de l'en-tête et signature : `src/config.js` (nom, sous-titre, adresse, contact, nom de la direction).
-- Logo : dépose un fichier `public/logo.png`, il apparaît automatiquement sur les reçus et les notes.
+- Texte de l'en-tête et signature : **Mon profil → Le centre** (enregistré en base ; `src/config.js` ne contient que les valeurs par défaut).
+- Logo : `public/logo.png` : affiché dans l'en-tête de l'app, sur la page de connexion, la vérification publique, les reçus et les notes.
