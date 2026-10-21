@@ -3,15 +3,17 @@ import { sb, q } from "../supabase.js";
 import { fcfa, fdate } from "../utils.js";
 import { chargerRelances, messageWhatsApp, waLink, waNumber } from "../data.js";
 import { notesPdf } from "../pdf.js";
+import { Detail } from "./Etudiants.jsx";
 import { Badge, Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
 
-export default function Relances() {
+export default function Relances({ onEncaisser }) {
   const notify = useToast();
   const [run, busy] = useAction();
   const st = useLoad(chargerRelances, []);
   const [search, setSearch] = useState("");
   const [classe, setClasse] = useState("");
   const [filtre, setFiltre] = useState("tous"); // tous | retard | avenir
+  const [open, setOpen] = useState(null);
 
   if (!st.data) return <Loading state={st} />;
 
@@ -44,7 +46,7 @@ export default function Relances() {
     <>
       <h2>Relances</h2>
       <p className="muted">
-        Étudiants qui ont encore un montant à payer. Les paiements déjà saisis mais pas encore validés ne sont pas comptés.
+        Clique sur un nom pour ouvrir sa fiche : s'il a payé entre-temps, encaisse son paiement ou régularise sa situation, puis la liste se met à jour. Sinon, envoie le WhatsApp ou imprime la note. Les paiements déjà saisis mais pas encore validés ne sont pas comptés.
       </p>
 
       <div className="row" style={{ marginBottom: 12 }}>
@@ -76,7 +78,7 @@ export default function Relances() {
               <tbody>
                 {list.map((s) => (
                   <tr key={s.id}>
-                    <td><b>{s.nom}</b><br /><span className="muted">{s.classe || "—"}</span></td>
+                    <td><button className="link" onClick={() => setOpen(s)} title="Ouvrir la fiche : paiements, encaissement, régularisation"><b>{s.nom}</b></button><br /><span className="muted">{s.classe || "—"}</span></td>
                     <td><b>{fcfa(s.total)}</b></td>
                     <td>
                       {fdate(s.prochaine)}<br />
@@ -101,6 +103,8 @@ export default function Relances() {
           <p className="muted">Aucun étudiant à relancer avec ces filtres.</p>
         )}
       </div>
+
+      {open && <Detail etudiant={open} onClose={() => setOpen(null)} onChanged={st.reload} onEncaisser={onEncaisser} />}
     </>
   );
 }

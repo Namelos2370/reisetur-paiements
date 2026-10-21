@@ -141,7 +141,7 @@ function Shell({ onLogout }) {
         {tab === "valider" && <Validations />}
         {tab === "encaisser" && <Encaisser preselect={preselect} />}
         {tab === "etudiants" && <Etudiants onEncaisser={goEncaisser} />}
-        {tab === "relances" && <Relances />}
+        {tab === "relances" && <Relances onEncaisser={goEncaisser} />}
         {tab === "exports" && <Exports />}
         {tab === "verifier" && <Verifier />}
         {tab === "journal" && <Journal />}

@@ -173,7 +173,7 @@ function NouveauxFrais({ etudiantId, onCreated }) {
   );
 }
 
-function Detail({ etudiant, onClose, onChanged }) {
+export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
   const notify = useToast();
   const [passage, setPassage] = useState(false);
   const [run] = useAction();
@@ -215,7 +215,10 @@ function Detail({ etudiant, onClose, onChanged }) {
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
       <p className="muted">{etudiant.telephone || "Pas de téléphone"}</p>
-      {etudiant.niveau !== "C1" && <button className="small primary" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}
+      <div className="actions">
+        {onEncaisser && <button className="small primary" onClick={() => { onClose(); onEncaisser(etudiant.id); }}>＋ Encaisser un paiement</button>}
+        {etudiant.niveau !== "C1" && <button className="small" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}
+      </div>
 
       {!st.data ? <Loading state={st} /> : (
         <>
@@ -360,7 +363,7 @@ export default function Etudiants({ onEncaisser }) {
         </div>
       ))}
 
-      {open && <Detail etudiant={open} onClose={() => setOpen(null)} onChanged={st.reload} />}
+      {open && <Detail etudiant={open} onClose={() => setOpen(null)} onChanged={st.reload} onEncaisser={onEncaisser} />}
     </>
   );
 }
