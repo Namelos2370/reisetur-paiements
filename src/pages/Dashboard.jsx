@@ -23,8 +23,7 @@ export default function Dashboard({ onValider, onGo }) {
     <>
       <h2>Tableau de bord</h2>
       <div className="actions" style={{ marginBottom: 18 }}>
-        <button className="primary" onClick={() => onGo("encaisser")}>＋ Nouvel encaissement</button>
-        {d.nb_a_valider > 0 && <button onClick={onValider}>Valider les paiements ({d.nb_a_valider})</button>}
+        {d.nb_a_valider > 0 && <button className="primary" onClick={onValider}>Valider les paiements ({d.nb_a_valider})</button>}
         <button onClick={() => onGo("relances")}>Relancer les impayés</button>
       </div>
       <div className="grid">
