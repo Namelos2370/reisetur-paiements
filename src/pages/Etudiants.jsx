@@ -290,6 +290,8 @@ export default function Etudiants({ onEncaisser }) {
   }, []);
   const [search, setSearch] = useState("");
   const [classe, setClasse] = useState("");
+  const [filtre, setFiltre] = useState("tous");
+  const [panneau, setPanneau] = useState(null); // null | "ajout" | "import"
   const [open, setOpen] = useState(null);
 
   if (!st.data) return <Loading state={st} />;
@@ -297,21 +299,42 @@ export default function Etudiants({ onEncaisser }) {
   const byE = {};
   st.data.frais.forEach((f) => (byE[f.etudiant_id] ||= []).push(f));
   const classes = [...new Set(st.data.etus.map((e) => e.classe).filter(Boolean))].sort();
-  const list = st.data.etus.filter(
+  const etat = (e) => {
+    const fr = byE[e.id] || [];
+    if (!fr.length) return "sans";
+    if (fr.some((f) => f.solde - f.a_valider > 0)) return "impayes";
+    if (fr.some((f) => f.a_valider > 0)) return "avalider";
+    return "soldes";
+  };
+  const base = st.data.etus.filter(
     (e) => e.nom.toLowerCase().includes(search.toLowerCase()) && (!classe || e.classe === classe)
   );
+  const compte = (k) => base.filter((e) => etat(e) === k).length;
+  const FILTRES = [["tous", "Tous", base.length], ["impayes", "Reste à payer", compte("impayes")], ["avalider", "À valider", compte("avalider")], ["soldes", "Soldés", compte("soldes")]];
+  const list = filtre === "tous" ? base : base.filter((e) => etat(e) === filtre);
 
   return (
     <>
-      <h2>Étudiants</h2>
-      <ImportEtudiants onDone={st.reload} />
-      <NouvelEtudiant onAdded={st.reload} />
-      <div className="row" style={{ marginBottom: 16 }}>
-        <input placeholder="Rechercher un étudiant…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="between" style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>Étudiants <span className="muted" style={{ fontSize: ".95rem", fontWeight: 400 }}>({list.length})</span></h2>
+        <div className="actions">
+          <button className={"small" + (panneau === "ajout" ? " primary" : "")} onClick={() => setPanneau(panneau === "ajout" ? null : "ajout")}>＋ Nouvel étudiant</button>
+          <button className={"small" + (panneau === "import" ? " primary" : "")} onClick={() => setPanneau(panneau === "import" ? null : "import")}>Importer un fichier Excel</button>
+        </div>
+      </div>
+      {panneau === "ajout" && <NouvelEtudiant onAdded={() => { st.reload(); setPanneau(null); }} />}
+      {panneau === "import" && <ImportEtudiants onDone={() => { st.reload(); setPanneau(null); }} />}
+      <div className="row" style={{ marginBottom: 12 }}>
+        <input type="search" placeholder="Rechercher un étudiant…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select value={classe} onChange={(e) => setClasse(e.target.value)}>
           <option value="">Toutes les classes</option>
           {classes.map((c) => <option key={c}>{c}</option>)}
         </select>
+      </div>
+      <div className="chips" role="tablist">
+        {FILTRES.map(([id, label, n]) => (
+          <button key={id} role="tab" aria-selected={filtre === id} className={"chip" + (filtre === id ? " on" : "")} onClick={() => setFiltre(id)}>{label} <b>{n}</b></button>
+        ))}
       </div>
 
       {!list.length && <p className="muted">Aucun étudiant.</p>}

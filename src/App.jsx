@@ -76,7 +76,10 @@ function Login({ message, onDone }) {
 }
 
 function Shell({ onLogout }) {
-  const [tab, setTab] = useState("dashboard");
+  const [tab, setTab] = useState(() => {
+    try { const t = sessionStorage.getItem("tab"); return t && [...TABS, ...MENU].some(([id]) => id === t) ? t : "dashboard"; } catch { return "dashboard"; }
+  });
+  const [aValider, setAValider] = useState(null);
   const [menu, setMenu] = useState(false);
   const [preselect, setPreselect] = useState(null);
   const [nomCentre, setNomCentre] = useState(ECOLE.nom);
@@ -86,6 +89,13 @@ function Shell({ onLogout }) {
     sb.from("ecole_parametres").select("*").eq("id", "unique").maybeSingle()
       .then(({ data }) => { if (data) { appliquerEcole(data); setNomCentre(data.nom); } });
   }, []);
+
+  useEffect(() => {
+    try { sessionStorage.setItem("tab", tab); } catch { /* sans stockage */ }
+    sb.from("encaissements").select("id", { count: "exact", head: true }).eq("statut", "en_attente")
+      .then(({ count }) => setAValider(count ?? null));
+    window.scrollTo({ top: 0 });
+  }, [tab]);
 
   useEffect(() => {
     if (!menu) return;
@@ -120,12 +130,14 @@ function Shell({ onLogout }) {
       </header>
       <nav className="tabs">
         {TABS.map(([id, label]) => (
-          <button key={id} className={tab === id ? "active" : ""} onClick={() => go(id)}>{label}</button>
+          <button key={id} className={tab === id ? "active" : ""} onClick={() => go(id)}>
+            {label}{id === "valider" && aValider > 0 && <span className="count">{aValider}</span>}
+          </button>
         ))}
         {dansMenu && <button className="active">{dansMenu[1]}</button>}
       </nav>
       <main>
-        {tab === "dashboard" && <Dashboard onValider={() => setTab("valider")} />}
+        {tab === "dashboard" && <Dashboard onValider={() => setTab("valider")} onGo={go} />}
         {tab === "valider" && <Validations />}
         {tab === "encaisser" && <Encaisser preselect={preselect} />}
         {tab === "etudiants" && <Etudiants onEncaisser={goEncaisser} />}

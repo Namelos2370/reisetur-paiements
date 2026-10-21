@@ -2,7 +2,7 @@ import { sb, q } from "../supabase.js";
 import { fcfa, fdate, nombre, TYPE } from "../utils.js";
 import { Loading, useLoad } from "../components/ui.jsx";
 
-export default function Dashboard({ onValider }) {
+export default function Dashboard({ onValider, onGo }) {
   const st = useLoad(
     async () => {
       const [d, retards] = await Promise.all([
@@ -22,6 +22,11 @@ export default function Dashboard({ onValider }) {
   return (
     <>
       <h2>Tableau de bord</h2>
+      <div className="actions" style={{ marginBottom: 18 }}>
+        <button className="primary" onClick={() => onGo("encaisser")}>＋ Nouvel encaissement</button>
+        {d.nb_a_valider > 0 && <button onClick={onValider}>Valider les paiements ({d.nb_a_valider})</button>}
+        <button onClick={() => onGo("relances")}>Relancer les impayés</button>
+      </div>
       <div className="grid">
         <div className="stat"><div className="l">Total encaissé (validé)</div><div className="v">{fcfa(d.total_valide)}</div></div>
         <div className="stat"><div className="l">Reste à encaisser</div><div className="v">{fcfa(reste)}</div></div>
@@ -57,15 +62,15 @@ export default function Dashboard({ onValider }) {
         )}
       </div>
 
-      <h3>Impayés en retard</h3>
+      <h3>Impayés en retard <span className="muted" style={{ fontWeight: 400 }}>({retards.length})</span></h3>
       <div className="card tablewrap">
         {retards.length ? (
           <table>
             <thead><tr><th>Étudiant</th><th>Frais</th><th>Échéance</th><th>Reste</th></tr></thead>
             <tbody>
-              {retards.map((r) => (
+              {retards.slice(0, 10).map((r) => (
                 <tr key={r.id}>
-                  <td>{r.etudiant_nom}</td>
+                  <td><b>{r.etudiant_nom}</b><br /><span className="muted">{r.etudiant_classe || "—"}</span></td>
                   <td>{TYPE[r.type]} — tranche {r.numero}</td>
                   <td>{fdate(r.date_limite)}</td>
                   <td><b>{fcfa(r.solde)}</b></td>
@@ -75,6 +80,9 @@ export default function Dashboard({ onValider }) {
           </table>
         ) : (
           <p className="muted">Aucun retard.</p>
+        )}
+        {retards.length > 10 && (
+          <p style={{ margin: "14px 0 0" }}><button className="small" onClick={() => onGo("relances")}>Voir les {retards.length} retards dans Relances →</button></p>
         )}
       </div>
     </>
