@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { fcfa, fdate, GLOBAL, STAT, TYPE, today } from "../utils.js";
+import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, STAT, TYPE, today } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu } from "../data.js";
@@ -22,6 +22,8 @@ function PasserNiveau({ etudiant, onClose, onDone }) {
   const [classe, setClasse] = useState("");
   const [date, setDate] = useState(today());
   const [f, setF] = useState({ m1: null, d1: "", m2: null, d2: "" });
+  const [debut, setDebut] = useState("");
+  const onDebut = (e) => { setDebut(e.target.value); setF((s) => ({ ...s, ...echeancesDepuisDebut(e.target.value) })); };
   const tarif = info.data?.tarifs.find((t) => t.niveau === niveau);
   const m1 = f.m1 ?? tarif?.scolarite_t1 ?? "";
   const m2 = f.m2 ?? tarif?.scolarite_t2 ?? "";
@@ -63,8 +65,11 @@ function PasserNiveau({ etudiant, onClose, onDone }) {
             </div>
             <div><label htmlFor="pn-cl">Nouvelle classe</label><input id="pn-cl" placeholder="ex. B1 Clausthal" value={classe} onChange={(e) => setClasse(e.target.value)} /></div>
           </div>
-          <label htmlFor="pn-dt">Date du passage</label>
-          <input id="pn-dt" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+          <div className="row">
+            <div><label htmlFor="pn-dt">Date du passage</label><input id="pn-dt" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <div><label htmlFor="pn-db">Début des cours du nouveau niveau</label><input id="pn-db" type="date" value={debut} onChange={onDebut} /></div>
+          </div>
+          <p className="muted">Les échéances se remplissent à partir du début des cours : tranche 1 au début, tranche 2 deux semaines après. Tu peux les ajuster.</p>
           <h3>Scolarité {niveau} (2 tranches)</h3>
           {!tarif?.scolarite_t1 && <p className="muted">Aucun tarif défini pour {niveau} : saisis-le ici (ou dans Mon profil → Tarifs).</p>}
           <div className="row">
@@ -129,6 +134,8 @@ function NouveauxFrais({ etudiantId, onCreated }) {
   const [run, busy] = useAction();
   const [f, setF] = useState({ type: "inscription", m1: "", d1: "", m2: "", d2: "" });
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const [debut, setDebut] = useState("");
+  const onDebut = (e) => { setDebut(e.target.value); setF((s) => ({ ...s, ...echeancesDepuisDebut(e.target.value) })); };
 
   const submit = (e) => {
     e.preventDefault();
@@ -151,6 +158,8 @@ function NouveauxFrais({ etudiantId, onCreated }) {
         <option value="inscription">Inscription</option>
         <option value="scolarite">Scolarité</option>
       </select>
+      <label htmlFor="f-debut">Début des cours <span className="muted">(remplit les échéances : T1 au début, T2 deux semaines après)</span></label>
+      <input id="f-debut" type="date" value={debut} onChange={onDebut} />
       <div className="row">
         <div><label htmlFor="f-m1">Tranche 1 — montant (FCFA)</label><input id="f-m1" type="number" min="1" required value={f.m1} onChange={set("m1")} /></div>
         <div><label htmlFor="f-d1">Tranche 1 — date limite</label><input id="f-d1" type="date" required value={f.d1} onChange={set("d1")} /></div>

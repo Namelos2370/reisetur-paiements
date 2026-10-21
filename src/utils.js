@@ -40,3 +40,11 @@ export function friendly(e) {
   if (m.includes("Invalid login")) return "Email ou mot de passe incorrect.";
   return m;
 }
+
+// Règle d'échéances : tranche 1 versée au début des cours, tranche 2 deux semaines plus tard.
+export function echeancesDepuisDebut(debut) {
+  if (!debut) return { d1: "", d2: "" };
+  const d = new Date(debut + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 14);
+  return { d1: debut, d2: d.toISOString().slice(0, 10) };
+}
