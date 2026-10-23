@@ -7,7 +7,10 @@ const money = (n) => nf.format(Number(n || 0)).replace(/[  ]/g, " ") + " FCFA
 const iso = (d) => (d.length === 10 ? d + "T00:00:00" : d);
 const dlong = (d) => new Date(iso(d)).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 const dshort = (d) => new Date(iso(d)).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const todayIso = () => isoLocal(new Date());
+const dansJours = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoLocal(d); };
+const dlongJour = (d) => new Date(iso(d)).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 const BLEU = [11, 61, 145];
@@ -186,9 +189,19 @@ function noteUnePage(doc, logo, it) {
   doc.setFontSize(11);
   doc.text([it.classe, it.niveau && `niveau ${it.niveau}`].filter(Boolean).join(" - "), 55, 90);
 
-  const intro = it.enRetard
-    ? "Nous constatons qu'une ou plusieurs échéances de paiement de vos frais de formation sont dépassées. Nous vous prions de bien vouloir régulariser votre situation dans les meilleurs délais."
-    : "Nous vous rappelons les échéances de paiement de vos frais de formation indiquées ci-dessous.";
+  // Montants exactement dus : tranches échues (ou, à défaut, la prochaine), à régler sous 7 jours
+  const t0 = todayIso();
+  const echues = it.lignes.filter((l) => l.date_limite <= t0);
+  const lignes = echues.length ? echues : [it.lignes[0]];
+  const total = lignes.reduce((s, l) => s + l.reste, 0);
+  const limite = dansJours(7);
+  const libelle = (l) =>
+    l.type === "inscription"
+      ? "Frais d'inscription" + (l.partiel ? " (solde)" : "")
+      : `Frais de scolarité - Tranche ${l.numero}` + (l.partiel ? " (solde)" : "");
+
+  const intro =
+    "Nous vous rappelons qu'il vous reste les montants suivants à régler pour votre formation. Nous vous prions de bien vouloir les verser à la banque au plus tard à la date limite indiquée ci-dessous.";
   doc.text(doc.splitTextToSize(intro, W - 40), 20, 105);
 
   // Tableau
@@ -199,15 +212,13 @@ function noteUnePage(doc, logo, it) {
   doc.setFontSize(10.5);
   doc.setTextColor(255, 255, 255);
   doc.text("Objet", 24, y);
-  doc.text("Échéance", 112, y);
   doc.text("Reste à payer", W - 24, y, { align: "right" });
   y += 9;
-  doc.setFontSize(11);
-  it.lignes.forEach((l) => {
+  doc.setFontSize(11.5);
+  lignes.forEach((l) => {
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(l.retard ? 180 : 20, l.retard ? 35 : 32, l.retard ? 24 : 51);
-    doc.text(objet(l.type, l.numero), 24, y);
-    doc.text(dshort(l.date_limite) + (l.retard ? " (dépassée)" : ""), 112, y);
+    doc.setTextColor(20, 32, 51);
+    doc.text(libelle(l), 24, y);
     doc.setFont("helvetica", "bold");
     doc.text(money(l.reste), W - 24, y, { align: "right" });
     doc.setDrawColor(221, 227, 238);
@@ -215,13 +226,30 @@ function noteUnePage(doc, logo, it) {
     doc.line(20, y + 3.5, W - 20, y + 3.5);
     y += 10;
   });
-  doc.setFillColor(231, 238, 251);
-  doc.rect(20, y - 4, W - 40, 11, "F");
+  if (lignes.length > 1) {
+    doc.setFillColor(231, 238, 251);
+    doc.rect(20, y - 4, W - 40, 11, "F");
+    doc.setTextColor(...BLEU);
+    doc.setFontSize(12);
+    doc.text("TOTAL À RÉGLER", 24, y + 3);
+    doc.text(money(total), W - 24, y + 3, { align: "right" });
+    y += 14;
+  }
+
+  // Date limite
+  y += 4;
+  doc.setDrawColor(...BLEU);
+  doc.setLineWidth(0.7);
+  doc.roundedRect(20, y - 6, W - 40, 20, 2, 2);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
+  doc.setTextColor(70, 80, 100);
+  doc.text("À payer avant le", W / 2, y + 1, { align: "center" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
   doc.setTextColor(...BLEU);
-  doc.setFontSize(12);
-  doc.text("TOTAL À RÉGLER", 24, y + 3);
-  doc.text(money(it.total), W - 24, y + 3, { align: "right" });
-  y += 20;
+  doc.text(dlongJour(limite), W / 2, y + 10, { align: "center" });
+  y += 30;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);

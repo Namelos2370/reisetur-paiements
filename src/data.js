@@ -49,6 +49,7 @@ export async function chargerRelances() {
       numero: t.numero,
       date_limite: t.date_limite,
       reste,
+      partiel: t.paye > 0,
       retard: t.date_limite < t0,
     });
   });
