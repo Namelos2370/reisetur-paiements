@@ -48,3 +48,18 @@ export function echeancesDepuisDebut(debut) {
   d.setUTCDate(d.getUTCDate() + 14);
   return { d1: debut, d2: d.toISOString().slice(0, 10) };
 }
+
+// ---- Rappels (note PDF et WhatsApp) : mêmes montants, même date limite ----
+export const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+export const dansJours = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoLocal(d); };
+
+// Tranches à réclamer : celles dont l'échéance est atteinte (sinon la prochaine), à régler sous 7 jours.
+export function lignesRappel(lignes) {
+  const t0 = isoLocal(new Date());
+  const echues = lignes.filter((l) => l.date_limite <= t0);
+  const dues = echues.length ? echues : [lignes[0]];
+  return { lignes: dues, total: dues.reduce((s, l) => s + l.reste, 0), limite: dansJours(7) };
+}
+
+export const libelleRappel = (l) =>
+  (l.type === "inscription" ? "Frais d'inscription" : `Frais de scolarité - Tranche ${l.numero}`) + (l.partiel ? " (solde)" : "");

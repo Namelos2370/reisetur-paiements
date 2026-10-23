@@ -1,5 +1,5 @@
 import { ECOLE } from "./config.js";
-import { TYPE } from "./utils.js";
+import { TYPE, dansJours, isoLocal, libelleRappel, lignesRappel } from "./utils.js";
 
 // jsPDF ne sait pas afficher les espaces insécables des nombres français : on les remplace.
 const nf = new Intl.NumberFormat("fr-FR");
@@ -7,9 +7,7 @@ const money = (n) => nf.format(Number(n || 0)).replace(/[  ]/g, " ") + " FCFA
 const iso = (d) => (d.length === 10 ? d + "T00:00:00" : d);
 const dlong = (d) => new Date(iso(d)).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 const dshort = (d) => new Date(iso(d)).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const todayIso = () => isoLocal(new Date());
-const dansJours = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoLocal(d); };
 const dlongJour = (d) => new Date(iso(d)).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
 
@@ -190,15 +188,8 @@ function noteUnePage(doc, logo, it) {
   doc.text([it.classe, it.niveau && `niveau ${it.niveau}`].filter(Boolean).join(" - "), 55, 90);
 
   // Montants exactement dus : tranches échues (ou, à défaut, la prochaine), à régler sous 7 jours
-  const t0 = todayIso();
-  const echues = it.lignes.filter((l) => l.date_limite <= t0);
-  const lignes = echues.length ? echues : [it.lignes[0]];
-  const total = lignes.reduce((s, l) => s + l.reste, 0);
-  const limite = dansJours(7);
-  const libelle = (l) =>
-    l.type === "inscription"
-      ? "Frais d'inscription" + (l.partiel ? " (solde)" : "")
-      : `Frais de scolarité - Tranche ${l.numero}` + (l.partiel ? " (solde)" : "");
+  const { lignes, total, limite } = lignesRappel(it.lignes);
+  const libelle = libelleRappel;
 
   const intro =
     "Nous vous rappelons qu'il vous reste les montants suivants à régler pour votre formation. Nous vous prions de bien vouloir les verser à la banque au plus tard à la date limite indiquée ci-dessous.";

@@ -1,6 +1,6 @@
 import { sb, q } from "./supabase.js";
 import { ECOLE } from "./config.js";
-import { fcfa, today, TYPE } from "./utils.js";
+import { fcfa, today, TYPE, libelleRappel, lignesRappel } from "./utils.js";
 import { recuPdf } from "./pdf.js";
 
 // ---- Reçu ----
@@ -84,13 +84,13 @@ export function waNumber(tel) {
 const dcourt = (d) => new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export function messageWhatsApp(s) {
-  const lignes = s.lignes
-    .map((l) => `• ${l.type === "inscription" ? "Inscription" : `Scolarité (tranche ${l.numero})`} : ${fcfa(l.reste)}, échéance le ${dcourt(l.date_limite)}${l.retard ? " (dépassée)" : ""}`)
-    .join("\n");
+  const { lignes, total, limite } = lignesRappel(s.lignes);
+  const detail = lignes.map((l) => `• ${libelleRappel(l)} : ${fcfa(l.reste)}`).join("\n");
   return (
     `Bonjour ${s.nom},\n\n` +
-    `${ECOLE.nom} vous rappelle qu'il reste ${fcfa(s.total)} à régler pour votre formation${s.classe ? ` (${s.classe})` : ""} :\n${lignes}\n\n` +
-    `Le versement se fait à la banque. Merci de présenter votre bordereau à l'administration pour recevoir votre reçu. ` +
+    `${ECOLE.nom} vous rappelle qu'il vous reste à régler${s.classe ? ` pour votre formation (${s.classe})` : " pour votre formation"} :\n${detail}\n` +
+    `${lignes.length > 1 ? `Total : ${fcfa(total)}\n` : ""}\n` +
+    `Merci de verser ce montant à la banque *avant le ${dcourt(limite)}*, puis de présenter votre bordereau à l'administration pour recevoir votre reçu. ` +
     `Si vous avez déjà payé, merci de nous envoyer votre reçu.\n\n` +
     `Cordialement,\n${ECOLE.direction}`
   );
