@@ -11,6 +11,7 @@ import Journal from "./pages/Journal.jsx";
 import Relances from "./pages/Relances.jsx";
 import Exports from "./pages/Exports.jsx";
 import PublicVerifier from "./pages/PublicVerifier.jsx";
+import PublicSituation from "./pages/PublicSituation.jsx";
 import Profil from "./pages/Profil.jsx";
 import { ECOLE, appliquerEcole } from "./config.js";
 
@@ -181,10 +182,12 @@ function Root() {
 
 export default function App() {
   // Page publique de vérification d'un reçu (sans connexion) : /verifier
-  const publique = window.location.pathname.replace(/\/+$/, "") === "/verifier";
+  const chemin = window.location.pathname.replace(/\/+$/, "");
+  const publique = chemin === "/verifier";
+  const situation = chemin === "/situation";
   return (
     <ToastProvider>
-      {publique ? <PublicVerifier /> : <Root />}
+      {publique ? <PublicVerifier /> : situation ? <PublicSituation /> : <Root />}
     </ToastProvider>
   );
 }

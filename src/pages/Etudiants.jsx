@@ -3,7 +3,8 @@ import { sb, q } from "../supabase.js";
 import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, STAT, TYPE, today } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
-import { telechargerRecu } from "../data.js";
+import { telechargerRecu, waLink, waNumber } from "../data.js";
+import { ECOLE } from "../config.js";
 
 const NIVEAUX = ["A1", "A2", "B1", "B2", "C1"];
 
@@ -176,6 +177,20 @@ function NouveauxFrais({ etudiantId, onCreated }) {
 export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
   const notify = useToast();
   const [passage, setPassage] = useState(false);
+  const [code, setCode] = useState(etudiant.code_acces);
+
+  const messageAcces = () =>
+    `Bonjour ${etudiant.nom},\n\n${ECOLE.nom} met à votre disposition le suivi de votre situation de paiement :\n` +
+    `Lien : ${window.location.origin}/situation\nMatricule : ${etudiant.matricule}\nCode d'accès : ${code}\n\n` +
+    `Gardez ce code pour vous. Cordialement,\n${ECOLE.direction}`;
+  const envoyerAcces = () => {
+    if (waNumber(etudiant.telephone)) window.open(waLink(etudiant.telephone, messageAcces()), "_blank", "noopener");
+    else navigator.clipboard?.writeText(messageAcces()).then(() => notify("Pas de numéro WhatsApp : message copié, colle-le où tu veux."));
+  };
+  const renouveler = () => {
+    if (!window.confirm("Générer un nouveau code ? L'ancien ne fonctionnera plus.")) return;
+    run(async () => { setCode(await q(sb.rpc("nouveau_code_acces", { p_etudiant: etudiant.id }))); notify("Nouveau code généré."); });
+  };
   const [run] = useAction();
   const st = useLoad(async () => {
     const [trs, encs, parcours] = await Promise.all([
@@ -215,6 +230,13 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
       <p className="muted"><b>{etudiant.matricule}</b> · {etudiant.telephone || "Pas de téléphone"}</p>
+      {code && (
+        <p className="muted">
+          Accès en ligne : matricule <b>{etudiant.matricule}</b> · code <b>{code}</b>{" "}
+          <button className="small" onClick={envoyerAcces}>Envoyer ses accès</button>{" "}
+          <button className="small" onClick={renouveler}>Nouveau code</button>
+        </p>
+      )}
       <div className="actions">
         {onEncaisser && <button className="small primary" onClick={() => { onClose(); onEncaisser(etudiant.id); }}>＋ Encaisser un paiement</button>}
         {etudiant.niveau !== "C1" && <button className="small" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}

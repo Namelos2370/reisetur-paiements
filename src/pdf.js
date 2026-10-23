@@ -251,6 +251,12 @@ function noteUnePage(doc, logo, it) {
     "Le versement s'effectue à la banque. Merci de présenter votre bordereau de versement à l'administration afin de recevoir votre reçu officiel. Si vous avez déjà effectué ce paiement, veuillez présenter votre reçu pour la mise à jour de votre dossier.";
   doc.text(doc.splitTextToSize(fin, W - 40), 20, y);
 
+  if (it.code_acces) {
+    doc.setFontSize(9);
+    doc.setTextColor(110, 120, 140);
+    doc.text(`Suivi en ligne : ${window.location.origin}/situation  -  Matricule ${it.matricule}  -  Code d'accès ${it.code_acces}`, W / 2, 285, { align: "center" });
+  }
+
   signature(doc, Math.max(y + 32, 215));
 }
 

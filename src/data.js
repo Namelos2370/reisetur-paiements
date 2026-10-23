@@ -62,6 +62,7 @@ export async function chargerRelances() {
         id: e.id,
         nom: e.nom,
         matricule: e.matricule,
+        code_acces: e.code_acces,
         classe: e.classe,
         niveau: e.niveau,
         telephone: e.telephone,
@@ -94,6 +95,7 @@ export function messageWhatsApp(s) {
     `${lignes.length > 1 ? `Total : ${fcfa(total)}\n` : ""}\n` +
     `Merci de verser ce montant à la banque *avant le ${dcourt(limite)}*, puis de présenter votre bordereau à l'administration pour recevoir votre reçu. ` +
     `Si vous avez déjà payé, merci de nous envoyer votre reçu.\n\n` +
+    (s.code_acces ? `Suivez votre situation en ligne : ${window.location.origin}/situation\nMatricule : ${s.matricule} — Code : ${s.code_acces}\n\n` : "") +
     `Cordialement,\n${ECOLE.direction}`
   );
 }
