@@ -20,7 +20,7 @@ export default function Relances({ onEncaisser }) {
   const classes = [...new Set(st.data.map((s) => s.classe).filter(Boolean))].sort();
   const list = st.data.filter(
     (s) =>
-      s.nom.toLowerCase().includes(search.toLowerCase()) &&
+      (s.nom + " " + (s.matricule || "")).toLowerCase().includes(search.toLowerCase()) &&
       (!classe || s.classe === classe) &&
       (filtre === "tous" || (filtre === "retard" ? s.enRetard : !s.enRetard))
   );
@@ -50,7 +50,7 @@ export default function Relances({ onEncaisser }) {
       </p>
 
       <div className="row" style={{ marginBottom: 12 }}>
-        <input placeholder="Rechercher un étudiant…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input placeholder="Rechercher un nom ou un matricule…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select value={classe} onChange={(e) => setClasse(e.target.value)}>
           <option value="">Toutes les classes</option>
           {classes.map((c) => <option key={c}>{c}</option>)}
@@ -78,7 +78,7 @@ export default function Relances({ onEncaisser }) {
               <tbody>
                 {list.map((s) => (
                   <tr key={s.id}>
-                    <td><button className="link" onClick={() => setOpen(s)} title="Ouvrir la fiche : paiements, encaissement, régularisation"><b>{s.nom}</b></button><br /><span className="muted">{s.classe || "—"}</span></td>
+                    <td><button className="link" onClick={() => setOpen(s)} title="Ouvrir la fiche : paiements, encaissement, régularisation"><b>{s.nom}</b></button><br /><span className="muted">{s.matricule} · {s.classe || "—"}</span></td>
                     <td><b>{fcfa(s.total)}</b></td>
                     <td>
                       {fdate(s.prochaine)}<br />

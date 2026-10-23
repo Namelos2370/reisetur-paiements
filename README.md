@@ -43,6 +43,7 @@ src/
 - **Vérification publique** : `https://ton-site/verifier?n=RT237-2026-0001`. L'étudiant doit saisir le n° de reçu **et** son nom ; aucune autre donnée n'est exposée.
 - **Navigation** : seuls les onglets essentiels sont visibles (Tableau de bord, À valider, Nouvel encaissement, Étudiants). Clique sur le **logo / nom du centre** pour ouvrir le menu : Relances, Exports, Vérifier un reçu, Journal, Mon profil, Déconnexion.
 - **Passage au niveau supérieur** : bouton dans la fiche étudiant (uniquement vers un niveau plus élevé, pour ceux qui ont réussi). Crée les frais de scolarité du nouveau niveau (tarifs pré-remplis depuis *Mon profil → Tarifs*), garde l'historique : chaque frais et chaque reçu conserve le niveau et la classe de son époque, et le parcours (A1 → A2 …) est enregistré.
+- **Matricule** : chaque étudiant a un matricule unique (`R237-AA-NNN`), attribué automatiquement à sa création et qui ne change jamais, même au passage de niveau. Il apparaît sur la fiche, les reçus, les notes de rappel, WhatsApp et les exports Excel, et sert à la recherche. Le n° de reçu reste l'identifiant de chaque paiement.
 - **Échéances** : tranche 1 due au début des cours, tranche 2 deux semaines après. En saisissant le « Début des cours » (nouveaux frais ou passage de niveau), les deux dates se remplissent toutes seules.
 - **Mon profil** : mes informations, changement de mot de passe, et informations du centre (nom, adresse, contact, ville, signature) utilisées sur les PDF et WhatsApp.
 

@@ -107,6 +107,7 @@ export async function recuPdf(r) {
 
   const rows = [
     ["Étudiant", r.nom],
+    ...(r.matricule ? [["Matricule", r.matricule]] : []),
     ["Classe", [r.classe, r.niveau && `(niveau ${r.niveau})`].filter(Boolean).join(" ") || "-"],
     ["Objet du paiement", objet(r.type, r.tranche)],
     ["Date du versement", dlong(r.date_paiement)],
@@ -186,6 +187,7 @@ function noteUnePage(doc, logo, it) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.text([it.classe, it.niveau && `niveau ${it.niveau}`].filter(Boolean).join(" - "), 55, 90);
+  if (it.matricule) doc.text(`Matricule : ${it.matricule}`, 55, 96);
 
   // Montants exactement dus : tranches échues (ou, à défaut, la prochaine), à régler sous 7 jours
   const { lignes, total, limite } = lignesRappel(it.lignes);

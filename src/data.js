@@ -17,6 +17,7 @@ export async function chargerRecu(encaissementId) {
     date_paiement: c.date_paiement,
     reference_banque: c.reference_banque,
     nom: e.nom,
+    matricule: e.matricule,
     classe: t.etudiant_classe ?? e.classe, // niveau/classe de l'époque du paiement
     niveau: t.niveau ?? e.niveau,
     type: t.type,
@@ -60,6 +61,7 @@ export async function chargerRelances() {
       return {
         id: e.id,
         nom: e.nom,
+        matricule: e.matricule,
         classe: e.classe,
         niveau: e.niveau,
         telephone: e.telephone,
@@ -87,7 +89,7 @@ export function messageWhatsApp(s) {
   const { lignes, total, limite } = lignesRappel(s.lignes);
   const detail = lignes.map((l) => `• ${libelleRappel(l)} : ${fcfa(l.reste)}`).join("\n");
   return (
-    `Bonjour ${s.nom},\n\n` +
+    `Bonjour ${s.nom}${s.matricule ? ` (matricule ${s.matricule})` : ""},\n\n` +
     `${ECOLE.nom} vous rappelle qu'il vous reste à régler${s.classe ? ` pour votre formation (${s.classe})` : " pour votre formation"} :\n${detail}\n` +
     `${lignes.length > 1 ? `Total : ${fcfa(total)}\n` : ""}\n` +
     `Merci de verser ce montant à la banque *avant le ${dcourt(limite)}*, puis de présenter votre bordereau à l'administration pour recevoir votre reçu. ` +

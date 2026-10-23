@@ -214,7 +214,7 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
         <h2>{etudiant.nom} <Badge>{etudiant.niveau}</Badge>{etudiant.classe && <> <Badge>{etudiant.classe}</Badge></>}</h2>
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
-      <p className="muted">{etudiant.telephone || "Pas de téléphone"}</p>
+      <p className="muted"><b>{etudiant.matricule}</b> · {etudiant.telephone || "Pas de téléphone"}</p>
       <div className="actions">
         {onEncaisser && <button className="small primary" onClick={() => { onClose(); onEncaisser(etudiant.id); }}>＋ Encaisser un paiement</button>}
         {etudiant.niveau !== "C1" && <button className="small" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}
@@ -310,7 +310,7 @@ export default function Etudiants({ onEncaisser }) {
     return "soldes";
   };
   const base = st.data.etus.filter(
-    (e) => e.nom.toLowerCase().includes(search.toLowerCase()) && (!classe || e.classe === classe)
+    (e) => (e.nom + " " + e.matricule).toLowerCase().includes(search.toLowerCase()) && (!classe || e.classe === classe)
   );
   const compte = (k) => base.filter((e) => etat(e) === k).length;
   const FILTRES = [["tous", "Tous", base.length], ["impayes", "Reste à payer", compte("impayes")], ["avalider", "À valider", compte("avalider")], ["soldes", "Soldés", compte("soldes")]];
@@ -328,7 +328,7 @@ export default function Etudiants({ onEncaisser }) {
       {panneau === "ajout" && <NouvelEtudiant onAdded={() => { st.reload(); setPanneau(null); }} />}
       {panneau === "import" && <ImportEtudiants onDone={() => { st.reload(); setPanneau(null); }} />}
       <div className="row" style={{ marginBottom: 12 }}>
-        <input type="search" placeholder="Rechercher un étudiant…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input type="search" placeholder="Rechercher un nom ou un matricule…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select value={classe} onChange={(e) => setClasse(e.target.value)}>
           <option value="">Toutes les classes</option>
           {classes.map((c) => <option key={c}>{c}</option>)}
@@ -346,7 +346,7 @@ export default function Etudiants({ onEncaisser }) {
           <div className="between">
             <div>
               <b style={{ fontSize: "1.1rem" }}>{e.nom}</b> <Badge>{e.niveau}</Badge>{e.classe && <> <Badge>{e.classe}</Badge></>}
-              <br /><span className="muted">{e.telephone || "Pas de téléphone"}</span>
+              <br /><span className="muted"><b>{e.matricule}</b> · {e.telephone || "Pas de téléphone"}</span>
             </div>
             <div className="actions">
               <button className="small" onClick={() => setOpen(e)}>Détails</button>

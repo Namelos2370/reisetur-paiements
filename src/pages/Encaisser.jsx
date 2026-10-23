@@ -7,7 +7,7 @@ import { telechargerRecu } from "../data.js";
 export default function Encaisser({ preselect }) {
   const notify = useToast();
   const [run, busy] = useAction();
-  const etus = useLoad(() => q(sb.from("etudiants").select("id,nom,niveau").order("nom")), []);
+  const etus = useLoad(() => q(sb.from("etudiants").select("id,nom,niveau,matricule").order("nom")), []);
 
   const [etuId, setEtuId] = useState(preselect || "");
   const [tranches, setTranches] = useState([]);
@@ -109,7 +109,7 @@ export default function Encaisser({ preselect }) {
         <label htmlFor="e-etu">Étudiant</label>
         <select id="e-etu" required value={etuId} onChange={(e) => setEtuId(e.target.value)}>
           <option value="">— Choisir —</option>
-          {etus.data.map((e) => <option key={e.id} value={e.id}>{e.nom} ({e.niveau})</option>)}
+          {etus.data.map((e) => <option key={e.id} value={e.id}>{e.nom} ({e.niveau}) — {e.matricule}</option>)}
         </select>
 
         <label htmlFor="e-tr">Frais et tranche à payer</label>

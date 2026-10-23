@@ -35,7 +35,7 @@ async function chargerBase() {
     const sco = ts.filter((t) => t.type === "scolarite").sort((a, b) => a.numero - b.numero);
     const attendu = somme(ts, "montant_du"), paye = somme(ts, "paye"), aval = somme(ts, "a_valider");
     return {
-      nom: e.nom, classe: e.classe || "", niveau: e.niveau, tel: e.telephone || "",
+      matricule: e.matricule, nom: e.nom, classe: e.classe || "", niveau: e.niveau, tel: e.telephone || "",
       insAtt: somme(ins, "montant_du"), insPaye: somme(ins, "paye"),
       scoAtt: somme(sco, "montant_du"), t1: sco[0]?.paye || 0, t2: sco[1]?.paye || 0,
       paye, aval, attendu, solde: attendu - paye,
@@ -60,7 +60,7 @@ async function chargerEncaissements() {
 function feuilleEtudiants(rows, { avecClasse, titreTotal }) {
   const head = [
     ...(avecClasse ? ["Classe"] : ["N°"]),
-    "Nom et prénom(s)", "Niveau", "Téléphone",
+    "Matricule", "Nom et prénom(s)", "Niveau", "Téléphone",
     "Inscription attendue", "Inscription payée", "Scolarité attendue", "Scolarité T1 payée", "Scolarité T2 payée",
     "Total payé (validé)", "À valider", "Total attendu", "Solde restant", "Statut",
   ];
@@ -68,17 +68,17 @@ function feuilleEtudiants(rows, { avecClasse, titreTotal }) {
   const data = [head.map(H)];
   rows.forEach((r, i) => data.push([
     avecClasse ? S(r.classe) : N(i + 1),
-    S(r.nom), S(r.niveau), S(r.tel),
+    S(r.matricule), S(r.nom), S(r.niveau), S(r.tel),
     N(r.insAtt), N(r.insPaye), N(r.scoAtt), N(r.t1), N(r.t2),
     N(r.paye), N(r.aval), N(r.attendu), N(r.solde), S(r.statut),
   ]));
   const pct = tot("attendu") ? Math.round((tot("paye") / tot("attendu")) * 100) : 0;
   data.push([
-    T(titreTotal), T(""), T(""), T(""),
+    T(titreTotal), T(""), T(""), T(""), T(""),
     N(tot("insAtt"), 1), N(tot("insPaye"), 1), N(tot("scoAtt"), 1), N(tot("t1"), 1), N(tot("t2"), 1),
     N(tot("paye"), 1), N(tot("aval"), 1), N(tot("attendu"), 1), N(tot("solde"), 1), T(`${pct}% recouvré`),
   ]);
-  const columns = [{ width: avecClasse ? 22 : 6 }, { width: 34 }, { width: 8 }, { width: 15 }, ...Array(9).fill({ width: 16 }), { width: 16 }];
+  const columns = [{ width: avecClasse ? 22 : 6 }, { width: 15 }, { width: 34 }, { width: 8 }, { width: 15 }, ...Array(9).fill({ width: 16 }), { width: 16 }];
   return { data, columns, stickyRowsCount: 1 };
 }
 
