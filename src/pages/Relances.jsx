@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { fcfa, fdate } from "../utils.js";
+import { fcfa, fdate, limiteRappel, fixerLimiteRappel } from "../utils.js";
 import { chargerRelances, messageWhatsApp, waLink, waNumber } from "../data.js";
 import { notesPdf } from "../pdf.js";
 import { Detail } from "./Etudiants.jsx";
@@ -14,6 +14,7 @@ export default function Relances({ onEncaisser }) {
   const [classe, setClasse] = useState("");
   const [filtre, setFiltre] = useState("tous"); // tous | retard | avenir
   const [open, setOpen] = useState(null);
+  const [, maj] = useState(0);
 
   if (!st.data) return <Loading state={st} />;
 
@@ -49,6 +50,11 @@ export default function Relances({ onEncaisser }) {
         Clique sur un nom pour ouvrir sa fiche : s'il a payé entre-temps, encaisse son paiement ou régularise sa situation, puis la liste se met à jour. Sinon, envoie le WhatsApp ou imprime la note. Les paiements déjà saisis mais pas encore validés ne sont pas comptés.
       </p>
 
+      <div className="card" style={{ marginBottom: 12 }}>
+        <label htmlFor="rl-lim">Date limite indiquée sur les notes et les WhatsApp</label>
+        <input id="rl-lim" type="date" value={limiteRappel()} onChange={(e) => { fixerLimiteRappel(e.target.value); maj((n) => n + 1); }} />
+        <p className="muted" style={{ margin: "6px 0 0" }}>Les notes réclament tout ce qui est dû à cette date, en une ligne par nature de frais.</p>
+      </div>
       <div className="row" style={{ marginBottom: 12 }}>
         <input placeholder="Rechercher un nom ou un matricule…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <select value={classe} onChange={(e) => setClasse(e.target.value)}>

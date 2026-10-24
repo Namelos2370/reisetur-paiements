@@ -1,6 +1,6 @@
 import { sb, q } from "./supabase.js";
 import { ECOLE } from "./config.js";
-import { fcfa, today, TYPE, libelleRappel, lignesRappel } from "./utils.js";
+import { fcfa, today, TYPE, libelleRappel, lignesRappel, proposerLimite, isoLocal } from "./utils.js";
 import { recuPdf } from "./pdf.js";
 
 // ---- Reçu ----
@@ -54,6 +54,8 @@ export async function chargerRelances() {
       retard: t.date_limite < t0,
     });
   });
+  const aVenir = Object.values(by).flat().map((l) => l.date_limite).filter((d) => d >= isoLocal(new Date())).sort();
+  proposerLimite(aVenir[0] || null);
   return etus
     .filter((e) => by[e.id])
     .map((e) => {
