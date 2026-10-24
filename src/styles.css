@@ -121,4 +121,7 @@ button.link:hover { background: none; color: var(--brand); }
 .sit-row-bot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: .88rem; }
 .sit-row.recu { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .sit-foot { color: var(--muted); font-size: .88rem; text-align: center; margin: 22px 8px 14px; }
-.sit-row.recu > b { white-space: nowrap; }
+.sit-row.recu b { white-space: nowrap; }
+.sit-recu-r { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.sit-check { display: flex; align-items: center; gap: 10px; font-weight: 500; margin: 16px 0 0; }
+.sit-check input { width: auto; }

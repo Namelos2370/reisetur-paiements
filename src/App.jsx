@@ -184,7 +184,7 @@ export default function App() {
   // Page publique de vérification d'un reçu (sans connexion) : /verifier
   const chemin = window.location.pathname.replace(/\/+$/, "");
   const publique = chemin === "/verifier";
-  const situation = chemin === "/situation";
+  const situation = chemin === "/situation" || chemin === "/profil";
   return (
     <ToastProvider>
       {publique ? <PublicVerifier /> : situation ? <PublicSituation /> : <Root />}
