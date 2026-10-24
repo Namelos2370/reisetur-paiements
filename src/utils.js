@@ -58,8 +58,14 @@ export function lignesRappel(lignes) {
   const t0 = isoLocal(new Date());
   const echues = lignes.filter((l) => l.date_limite <= t0);
   const dues = echues.length ? echues : [lignes[0]];
-  return { lignes: dues, total: dues.reduce((s, l) => s + l.reste, 0), limite: dansJours(7) };
+  // Une seule ligne par nature de frais (plus de séparation T1 / T2 sur les notes)
+  const parType = [];
+  dues.forEach((l) => {
+    const x = parType.find((y) => y.type === l.type);
+    if (x) { x.reste += l.reste; x.partiel = x.partiel || l.partiel; } else parType.push({ ...l });
+  });
+  return { lignes: parType, total: dues.reduce((s, l) => s + l.reste, 0), limite: dansJours(7) };
 }
 
 export const libelleRappel = (l) =>
-  (l.type === "inscription" ? "Frais d'inscription" : `Frais de scolarité - Tranche ${l.numero}`) + (l.partiel ? " (solde)" : "");
+  (l.type === "inscription" ? "Frais d'inscription" : "Frais de scolarité") + (l.partiel ? " (solde)" : "");
