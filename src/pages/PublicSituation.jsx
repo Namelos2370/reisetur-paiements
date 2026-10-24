@@ -78,6 +78,38 @@ export default function PublicSituation() {
     setPdfBusy("");
   };
 
+  const attestationNiveau = async (r) => {
+    setPdfBusy("niv" + r.niveau);
+    try {
+      const { attestationNiveauPdf } = await import("../pdf.js");
+      const p = (res.parcours || []).find((x) => x.niveau === r.niveau);
+      await attestationNiveauPdf({ nom: res.nom, matricule: res.matricule, niveau: r.niveau, classe: p?.classe, date_examen: r.date_examen, note: r.note, mention: r.mention });
+    } catch { setErr("L'attestation n'a pas pu être générée. Réessaie dans un instant."); }
+    setPdfBusy("");
+  };
+
+  const [coord, setCoord] = useState(null); // { tel, email, ville } en cours de saisie
+  const [coordMsg, setCoordMsg] = useState("");
+  const ouvrirCoord = () => { setCoordMsg(""); setCoord({ tel: res.telephone || "", email: res.email || "", ville: res.ville || "" }); };
+  const enregistrerCoord = async (e) => {
+    e.preventDefault();
+    setBusy(true); setCoordMsg("");
+    const { data, error } = await sb.rpc("maj_mes_infos", { p_matricule: res.matricule, p_code: code, p_tel: coord.tel, p_email: coord.email, p_ville: coord.ville });
+    setBusy(false);
+    if (error || !data) return setCoordMsg("Enregistrement impossible pour le moment. Réessaie dans un instant.");
+    setRes((r) => ({ ...r, telephone: coord.tel.trim() || null, email: coord.email.trim() || null, ville: coord.ville.trim() || null }));
+    setCoord(null); setCoordMsg("Coordonnées enregistrées ✔");
+  };
+
+  // Parcours : un niveau par ligne, avec son résultat d'examen
+  const niveauxParcours = [...new Set([...(res?.parcours || []).map((p) => p.niveau), ...(res?.resultats || []).map((r) => r.niveau)])];
+  const lignesParcours = niveauxParcours.map((n) => ({
+    niveau: n,
+    p: (res.parcours || []).find((x) => x.niveau === n),
+    r: (res.resultats || []).find((x) => x.niveau === n),
+  }));
+  const reussis = (res?.resultats || []).filter((r) => r.statut === "reussi");
+
   const tranches = (res?.tranches || []).filter((t) => t.montant_du > 0);
 
   const total = tranches.reduce((s, t) => s + t.montant_du, 0);
@@ -157,7 +189,7 @@ export default function PublicSituation() {
             </section>
 
 
-            {cal && (cal.debut || cal.fin || cal.examen || cal.horaires || cal.salle) && (
+            {cal && (cal.debut || cal.fin || cal.examen || cal.horaires || cal.salle || cal.formateur) && (
               <>
                 <h3 className="sit-h">Ma classe</h3>
                 <section className="sit-card sit-cal">
@@ -166,6 +198,27 @@ export default function PublicSituation() {
                   {cal.examen && <div><span>Examen</span><b>{fdate(cal.examen)}</b></div>}
                   {cal.horaires && <div><span>Horaires</span><b>{cal.horaires}</b></div>}
                   {cal.salle && <div><span>Salle</span><b>{cal.salle}</b></div>}
+                  {cal.formateur && <div><span>Formateur</span><b>{cal.formateur}</b></div>}
+                </section>
+              </>
+            )}
+
+            {lignesParcours.length > 0 && (
+              <>
+                <h3 className="sit-h">Mon parcours</h3>
+                <section className="sit-list">
+                  {lignesParcours.map(({ niveau, p, r }) => (
+                    <div className="sit-row" key={niveau}>
+                      <div className="sit-row-top">
+                        <b>Niveau {niveau}{niveau === res.niveau ? " · en cours" : ""}</b>
+                        {r ? <Badge def={r.statut === "reussi" ? ["Réussi", "ok"] : r.statut === "echec" ? ["Non validé", "bad"] : ["Résultat à venir", "neutral"]} /> : niveau !== res.niveau ? <Badge def={["Terminé", "neutral"]} /> : null}
+                      </div>
+                      <div className="sit-row-bot" style={{ marginTop: 6 }}>
+                        <span>{p?.classe || ""}{p?.debut ? ` · depuis le ${fdate(p.debut)}` : ""}</span>
+                        {r && (r.note != null || r.mention) && <span>{r.note != null ? `Note ${r.note}` : ""}{r.note != null && r.mention ? " · " : ""}{r.mention || ""}</span>}
+                      </div>
+                    </div>
+                  ))}
                 </section>
               </>
             )}
@@ -206,6 +259,47 @@ export default function PublicSituation() {
                 <div><b>Attestation d'inscription</b><div className="muted">{inscrite ? "Disponible" : "Disponible dès que l'inscription est réglée"}</div></div>
                 <button className="small" disabled={!inscrite || pdfBusy === "attestation"} onClick={attestation}>{pdfBusy === "attestation" ? "…" : "Télécharger"}</button>
               </div>
+              {reussis.map((r) => (
+                <div className="sit-row recu" key={r.niveau}>
+                  <div><b>Attestation de niveau {r.niveau}</b><div className="muted">Niveau validé{r.date_examen ? ` · examen du ${fdate(r.date_examen)}` : ""}</div></div>
+                  <button className="small" disabled={pdfBusy === "niv" + r.niveau} onClick={() => attestationNiveau(r)}>{pdfBusy === "niv" + r.niveau ? "…" : "Télécharger"}</button>
+                </div>
+              ))}
+              {(res.documents || []).map((d, i) => (
+                <div className="sit-row recu" key={i}>
+                  <div><b>{d.titre}</b><div className="muted">Support de cours</div></div>
+                  <a className="sit-lien" href={d.url} target="_blank" rel="noreferrer">Ouvrir</a>
+                </div>
+              ))}
+            </section>
+
+            <h3 className="sit-h">Mes coordonnées</h3>
+            <section className="sit-card">
+              {!coord ? (
+                <>
+                  <div className="sit-coord">
+                    <div><span>Téléphone</span><b>{res.telephone || "—"}</b></div>
+                    <div><span>E-mail</span><b>{res.email || "—"}</b></div>
+                    <div><span>Ville</span><b>{res.ville || "—"}</b></div>
+                  </div>
+                  <button className="small" style={{ marginTop: 12 }} onClick={ouvrirCoord}>Modifier mes coordonnées</button>
+                  {coordMsg && <p className="sit-note" style={{ color: "var(--ok)" }}>{coordMsg}</p>}
+                </>
+              ) : (
+                <form onSubmit={enregistrerCoord}>
+                  <label htmlFor="co-t">Téléphone (WhatsApp de préférence)</label>
+                  <input id="co-t" type="tel" value={coord.tel} onChange={(e) => setCoord({ ...coord, tel: e.target.value })} />
+                  <label htmlFor="co-e">E-mail</label>
+                  <input id="co-e" type="email" value={coord.email} onChange={(e) => setCoord({ ...coord, email: e.target.value })} />
+                  <label htmlFor="co-v">Ville</label>
+                  <input id="co-v" value={coord.ville} onChange={(e) => setCoord({ ...coord, ville: e.target.value })} />
+                  <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                    <button className="primary" disabled={busy}>Enregistrer</button>
+                    <button type="button" onClick={() => setCoord(null)}>Annuler</button>
+                  </div>
+                  {coordMsg && <p className="badge bad" style={{ marginTop: 12, display: "block" }}>{coordMsg}</p>}
+                </form>
+              )}
             </section>
 
             {ecoleInfo.instructions_paiement && (

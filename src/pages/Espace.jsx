@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { sb, q } from "../supabase.js";
+import { sb, q, avecColonne } from "../supabase.js";
 import { appliquerEcole } from "../config.js";
 import { fdate } from "../utils.js";
 import { Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
@@ -94,24 +94,24 @@ function Calendrier({ classes }) {
   const [run, busy] = useAction();
   const st = useLoad(() => q(sb.from("classes_infos").select("*").order("debut", { ascending: true, nullsFirst: false })), []);
   const [classe, setClasse] = useState("");
-  const [f, setF] = useState({ debut: "", fin: "", examen: "", horaires: "", salle: "" });
+  const [f, setF] = useState({ debut: "", fin: "", examen: "", horaires: "", salle: "", formateur: "" });
   const [libre, setLibre] = useState("");
   const nom = libre.trim() || classe;
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const choisir = (c) => {
     setClasse(c); setLibre("");
     const x = (st.data || []).find((r) => r.classe === c);
-    setF({ debut: x?.debut || "", fin: x?.fin || "", examen: x?.examen || "", horaires: x?.horaires || "", salle: x?.salle || "" });
+    setF({ debut: x?.debut || "", fin: x?.fin || "", examen: x?.examen || "", horaires: x?.horaires || "", salle: x?.salle || "", formateur: x?.formateur || "" });
   };
 
   const save = (e) => {
     e.preventDefault();
     if (!nom) return notify("Choisis une classe.", true);
     run(async () => {
-      await q(sb.from("classes_infos").upsert({
+      await avecColonne("formateur", (avec) => q(sb.from("classes_infos").upsert({
         classe: nom, debut: f.debut || null, fin: f.fin || null, examen: f.examen || null,
-        horaires: f.horaires.trim(), salle: f.salle.trim(), updated_at: new Date().toISOString(),
-      }, { onConflict: "classe" }));
+        horaires: f.horaires.trim(), salle: f.salle.trim(), ...(avec ? { formateur: f.formateur.trim() } : {}), updated_at: new Date().toISOString(),
+      }, { onConflict: "classe" })));
       notify(`Calendrier de « ${nom} » enregistré.`);
       st.reload();
     });
@@ -145,6 +145,8 @@ function Calendrier({ classes }) {
         <div><label htmlFor="cl-h">Jours et horaires</label><input id="cl-h" placeholder="ex. Lun–Ven, 8h–12h" value={f.horaires} onChange={set("horaires")} /></div>
         <div><label htmlFor="cl-s">Salle</label><input id="cl-s" value={f.salle} onChange={set("salle")} /></div>
       </div>
+      <label htmlFor="cl-fo">Formateur</label>
+      <input id="cl-fo" placeholder="Nom du formateur / de la formatrice" value={f.formateur} onChange={set("formateur")} />
       <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Enregistrer ce calendrier</button>
       {(st.data || []).length > 0 && (
         <div style={{ marginTop: 18 }}>
@@ -158,6 +160,66 @@ function Calendrier({ classes }) {
         </div>
       )}
     </form>
+  );
+}
+
+function Documents({ classes }) {
+  const notify = useToast();
+  const [run, busy] = useAction();
+  const st = useLoad(() => q(sb.from("documents").select("*").order("created_at", { ascending: false })), []);
+  const [titre, setTitre] = useState("");
+  const [url, setUrl] = useState("");
+  const [classe, setClasse] = useState("");
+  const add = (e) => {
+    e.preventDefault();
+    run(async () => {
+      let u = url.trim();
+      if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+      await q(sb.from("documents").insert({ titre: titre.trim(), url: u, classe: classe || null }));
+      setTitre(""); setUrl(""); setClasse("");
+      notify("Document ajouté.");
+      st.reload();
+    });
+  };
+  const toggle = (d) => run(async () => { await q(sb.from("documents").update({ actif: !d.actif }).eq("id", d.id)); st.reload(); });
+  const del = (d) => {
+    if (!window.confirm("Supprimer ce document ?")) return;
+    run(async () => { await q(sb.from("documents").delete().eq("id", d.id)); notify("Document supprimé."); st.reload(); });
+  };
+  return (
+    <section className="card">
+      <h3 style={{ marginTop: 0 }}>Documents et supports de cours</h3>
+      <p className="muted">Liens (Google Drive, PDF en ligne…) montrés aux étudiants dans « Mes documents ». Partage le fichier en « tous les utilisateurs disposant du lien ».</p>
+      <form onSubmit={add}>
+        <div className="row">
+          <div><label htmlFor="do-t">Titre</label><input id="do-t" required placeholder="ex. Cours A1 — semaine 1" value={titre} onChange={(e) => setTitre(e.target.value)} /></div>
+          <div>
+            <label htmlFor="do-c">Pour</label>
+            <select id="do-c" value={classe} onChange={(e) => setClasse(e.target.value)}>
+              <option value="">Tout le centre</option>
+              {classes.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <label htmlFor="do-u">Lien</label>
+        <input id="do-u" required placeholder="https://drive.google.com/…" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Ajouter</button>
+      </form>
+      <Loading state={st} />
+      {st.data && st.data.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          {st.data.map((d) => (
+            <div key={d.id} className="row" style={{ alignItems: "center", borderTop: "1px solid var(--line, #e5e9f0)", padding: "10px 0", opacity: d.actif ? 1 : 0.55 }}>
+              <div><b>{d.titre}</b><div className="muted">{d.classe || "Tout le centre"}{d.actif ? "" : " · masqué"}</div></div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button className="small" onClick={() => toggle(d)}>{d.actif ? "Masquer" : "Réafficher"}</button>
+                <button className="small danger" onClick={() => del(d)}>Supprimer</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -204,6 +266,7 @@ export default function Espace() {
       <p className="muted">Ce que tes étudiants voient dans « Mon profil » ({window.location.origin}/profil).</p>
       <Annonces classes={st.data.classes} />
       <Calendrier classes={st.data.classes} />
+      <Documents classes={st.data.classes} />
       <Paiement initial={st.data.ecole} onSaved={(row) => appliquerEcole(row)} />
     </>
   );

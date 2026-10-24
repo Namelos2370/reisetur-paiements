@@ -181,6 +181,71 @@ function NouveauxFrais({ etudiantId, niveau, onCreated }) {
   );
 }
 
+const STATUT_RES = { reussi: ["Réussi", "ok"], echec: ["Échec", "bad"], en_attente: ["En attente", "neutral"] };
+
+function Resultats({ etudiant }) {
+  const notify = useToast();
+  const [run, busy] = useAction();
+  const st = useLoad(() => q(sb.from("resultats").select("*").eq("etudiant_id", etudiant.id).order("niveau")), [etudiant.id]);
+  const [f, setF] = useState({ niveau: etudiant.niveau, date_examen: "", note: "", mention: "", statut: "reussi" });
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const save = (e) => {
+    e.preventDefault();
+    run(async () => {
+      await q(sb.from("resultats").upsert({
+        etudiant_id: etudiant.id, niveau: f.niveau, date_examen: f.date_examen || null,
+        note: f.note === "" ? null : +f.note, mention: f.mention.trim(), statut: f.statut,
+      }, { onConflict: "etudiant_id,niveau" }));
+      notify(`Résultat ${f.niveau} enregistré.`);
+      st.reload();
+    });
+  };
+  const del = (r) => {
+    if (!window.confirm(`Supprimer le résultat ${r.niveau} ?`)) return;
+    run(async () => { await q(sb.from("resultats").delete().eq("id", r.id)); st.reload(); });
+  };
+  return (
+    <>
+      <h3>Résultats d'examen</h3>
+      <p className="muted">Visibles par l'étudiant dans « Mon profil ». Un résultat « Réussi » lui donne accès à son attestation de niveau.</p>
+      {st.data?.length > 0 && (
+        <div className="tablewrap">
+          <table>
+            <thead><tr><th>Niveau</th><th>Examen</th><th>Note</th><th>Résultat</th><th></th></tr></thead>
+            <tbody>
+              {st.data.map((r) => (
+                <tr key={r.id}>
+                  <td><b>{r.niveau}</b></td>
+                  <td>{r.date_examen ? fdate(r.date_examen) : "—"}</td>
+                  <td>{r.note ?? "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
+                  <td><Badge def={STATUT_RES[r.statut]} /></td>
+                  <td className="actions">
+                    <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut })}>Modifier</button>
+                    <button className="small danger" onClick={() => del(r)}>Supprimer</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <form onSubmit={save}>
+        <div className="row">
+          <div><label htmlFor="rs-n">Niveau</label><select id="rs-n" value={f.niveau} onChange={set("niveau")}>{NIVEAUX.map((n) => <option key={n}>{n}</option>)}</select></div>
+          <div><label htmlFor="rs-s">Résultat</label><select id="rs-s" value={f.statut} onChange={set("statut")}><option value="reussi">Réussi</option><option value="echec">Échec</option><option value="en_attente">En attente</option></select></div>
+        </div>
+        <div className="row">
+          <div><label htmlFor="rs-d">Date de l'examen</label><input id="rs-d" type="date" value={f.date_examen} onChange={set("date_examen")} /></div>
+          <div><label htmlFor="rs-no">Note <span className="muted">(facultatif)</span></label><input id="rs-no" type="number" step="0.01" min="0" value={f.note} onChange={set("note")} /></div>
+        </div>
+        <label htmlFor="rs-m">Mention / commentaire <span className="muted">(facultatif)</span></label>
+        <input id="rs-m" value={f.mention} onChange={set("mention")} />
+        <button className="primary" style={{ marginTop: 14 }} disabled={busy}>Enregistrer le résultat</button>
+      </form>
+    </>
+  );
+}
+
 export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
   const notify = useToast();
   const [passage, setPassage] = useState(false);
@@ -236,7 +301,7 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
         <h2>{etudiant.nom} <Badge>{etudiant.niveau}</Badge>{etudiant.classe && <> <Badge>{etudiant.classe}</Badge></>}</h2>
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
-      <p className="muted"><b>{etudiant.matricule}</b> · {etudiant.telephone || "Pas de téléphone"}</p>
+      <p className="muted"><b>{etudiant.matricule}</b> · {etudiant.telephone || "Pas de téléphone"}{etudiant.email ? ` · ${etudiant.email}` : ""}{etudiant.ville ? ` · ${etudiant.ville}` : ""}</p>
       {code && (
         <p className="muted">
           Accès en ligne : matricule <b>{etudiant.matricule}</b> · code <b>{code}</b>{" "}
@@ -254,6 +319,8 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
           {st.data.parcours.length > 1 && (
             <p className="muted">Parcours : {st.data.parcours.map((p) => `${p.niveau}${p.classe ? ` (${p.classe})` : ""}`).join(" → ")}</p>
           )}
+          <Resultats etudiant={etudiant} />
+
           <h3>Tranches</h3>
           <div className="tablewrap">
             {st.data.trs.length ? (

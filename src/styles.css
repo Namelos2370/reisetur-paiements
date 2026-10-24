@@ -173,3 +173,6 @@ button.link:hover { background: none; color: var(--brand); }
 .dash-modes { display: flex; flex-direction: column; gap: 14px; }
 .dash-mode-top { display: flex; justify-content: space-between; gap: 10px; }
 .dash-mode-pct { font-size: .8rem; }
+.sit-coord { display: grid; gap: 10px; }
+.sit-coord span { display: block; color: var(--muted); font-size: .82rem; }
+a.sit-lien { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; font-size: .88rem; font-weight: 600; color: var(--ink); text-decoration: none; white-space: nowrap; }

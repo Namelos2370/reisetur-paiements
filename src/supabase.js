@@ -21,3 +21,12 @@ export async function avecMode(faire) {
     throw e;
   }
 }
+
+// Même principe pour une colonne ajoutée plus tard (ex. formateur) : réessai sans elle si la base n'est pas encore à jour.
+export async function avecColonne(col, faire) {
+  try { return await faire(true); }
+  catch (e) {
+    if (String(e?.message || "").includes(col)) return faire(false);
+    throw e;
+  }
+}
