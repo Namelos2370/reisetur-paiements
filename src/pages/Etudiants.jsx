@@ -130,11 +130,18 @@ function NouvelEtudiant({ onAdded }) {
   );
 }
 
-function NouveauxFrais({ etudiantId, onCreated }) {
+function NouveauxFrais({ etudiantId, niveau, onCreated }) {
   const notify = useToast();
   const [run, busy] = useAction();
   const [f, setF] = useState({ type: "inscription", m1: "", d1: "", m2: "", d2: "" });
+  const tarifs = useLoad(() => q(sb.from("tarifs_niveau").select("*").eq("niveau", niveau || "")), [niveau]);
+  const tarif = (tarifs.data || [])[0];
+  // Scolarité : montants proposés d'après les tarifs du niveau (Mon profil → Tarifs), modifiables
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const choisirType = (e) => {
+    const type = e.target.value;
+    setF((s) => ({ ...s, type, m1: type === "scolarite" && tarif?.scolarite_t1 ? String(tarif.scolarite_t1) : "", m2: type === "scolarite" && tarif?.scolarite_t2 ? String(tarif.scolarite_t2) : "" }));
+  };
   const [debut, setDebut] = useState("");
   const onDebut = (e) => { setDebut(e.target.value); setF((s) => ({ ...s, ...echeancesDepuisDebut(e.target.value) })); };
 
@@ -155,7 +162,7 @@ function NouveauxFrais({ etudiantId, onCreated }) {
   return (
     <form onSubmit={submit}>
       <label htmlFor="f-type">Type</label>
-      <select id="f-type" value={f.type} onChange={set("type")}>
+      <select id="f-type" value={f.type} onChange={choisirType}>
         <option value="inscription">Inscription</option>
         <option value="scolarite">Scolarité</option>
       </select>
@@ -269,7 +276,7 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
           </div>
 
           <h3>Définir de nouveaux frais (2 tranches)</h3>
-          <NouveauxFrais etudiantId={etudiant.id} onCreated={refresh} />
+          <NouveauxFrais etudiantId={etudiant.id} niveau={etudiant.niveau} onCreated={refresh} />
 
           <h3>Encaissements</h3>
           <div className="tablewrap">
