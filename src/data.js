@@ -95,7 +95,7 @@ export function messageWhatsApp(s) {
     `Bonjour ${s.nom}${s.matricule ? ` (matricule ${s.matricule})` : ""},\n\n` +
     `${ECOLE.nom} vous rappelle qu'il vous reste à régler${s.classe ? ` pour votre formation (${s.classe})` : " pour votre formation"} :\n${detail}\n` +
     `${lignes.length > 1 ? `Total : ${fcfa(total)}\n` : ""}\n` +
-    `Merci de verser ce montant à la banque *avant le ${dcourt(limite)}*, puis de présenter votre bordereau à l'administration pour recevoir votre reçu. ` +
+    `Merci de régler ce montant au centre *avant le ${dcourt(limite)}* ; un reçu officiel vous sera remis. ` +
     `Si vous avez déjà payé, merci de nous envoyer votre reçu.\n\n` +
     (s.code_acces ? `Suivez votre situation en ligne : ${window.location.origin}/situation\nMatricule : ${s.matricule} — Code : ${s.code_acces}\n\n` : "") +
     `Cordialement,\n${ECOLE.direction}`

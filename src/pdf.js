@@ -254,7 +254,7 @@ function noteUnePage(doc, logo, it) {
   const libelle = libelleRappel;
 
   const intro =
-    "Nous vous rappelons qu'il vous reste les montants suivants à régler pour votre formation. Nous vous prions de bien vouloir les verser à la banque au plus tard à la date limite indiquée ci-dessous.";
+    "Nous vous rappelons qu'il vous reste les montants suivants à régler pour votre formation. Nous vous prions de bien vouloir les régler au centre au plus tard à la date limite indiquée ci-dessous.";
   doc.text(doc.splitTextToSize(intro, W - 40), 20, 105);
 
   // Tableau
@@ -308,7 +308,7 @@ function noteUnePage(doc, logo, it) {
   doc.setFontSize(11);
   doc.setTextColor(20, 32, 51);
   const fin =
-    "Le versement s'effectue à la banque. Merci de présenter votre bordereau de versement à l'administration afin de recevoir votre reçu officiel. Si vous avez déjà effectué ce paiement, veuillez présenter votre reçu pour la mise à jour de votre dossier.";
+    "Le paiement s'effectue au centre. Un reçu officiel vous sera remis à chaque versement. Si vous avez déjà effectué ce paiement, veuillez présenter votre reçu pour la mise à jour de votre dossier.";
   doc.text(doc.splitTextToSize(fin, W - 40), 20, y);
 
   if (it.code_acces) {

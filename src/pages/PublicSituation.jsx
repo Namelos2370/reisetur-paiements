@@ -217,7 +217,7 @@ export default function PublicSituation() {
 
             {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">💬 Écrire à la direction sur WhatsApp</a>}
 
-            <p className="sit-foot">Le versement se fait à la banque. Présente ton bordereau à l'administration pour recevoir ton reçu officiel.</p>
+            <p className="sit-foot">Les paiements se font au centre : un reçu officiel t'est remis à chaque versement.</p>
             <button className="block" onClick={() => { ecrire(null); setRes(null); setCode(""); setErr(""); }}>Quitter</button>
           </>
         )}
