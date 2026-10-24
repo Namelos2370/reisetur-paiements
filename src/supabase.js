@@ -12,3 +12,12 @@ export async function q(promise) {
   if (error) throw error;
   return data;
 }
+
+// Tant que la colonne mode_paiement n'existe pas en base (SQL v5 pas encore exécuté), on réessaie sans elle.
+export async function avecMode(faire) {
+  try { return await faire(true); }
+  catch (e) {
+    if (String(e?.message || "").includes("mode_paiement")) return faire(false);
+    throw e;
+  }
+}

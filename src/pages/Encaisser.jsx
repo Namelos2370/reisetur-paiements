@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { sb, q } from "../supabase.js";
+import { sb, q, avecMode } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
 import { ChampsMode, Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
 import { telechargerRecu } from "../data.js";
@@ -62,21 +62,21 @@ export default function Encaisser({ preselect }) {
         const { error } = await sb.storage.from("bordereaux").upload(path, file, { contentType: file.type });
         if (error) throw error;
       }
-      const row = await q(
+      const row = await avecMode((avec) => q(
         sb.from("encaissements")
           .insert({
             tranche_id: tranche.id,
             montant: m,
             date_paiement: date,
             reference_banque: ref.trim() || null,
-            mode_paiement: mode,
+            ...(avec ? { mode_paiement: mode } : {}),
             numero_recu: numero.trim() || null,
             bordereau_path: path,
             statut: "valide",
           })
           .select()
           .single()
-      );
+      ));
       setLast({ ...row, etudiant, tranche });
       setRef(""); setNumero(""); setFile(null); setFileKey((k) => k + 1);
       notify("Encaissement validé.");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { sb, q } from "../supabase.js";
+import { sb, q, avecMode } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
 import { Badge, ChampsMode, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import { telechargerRecu } from "../data.js";
@@ -23,20 +23,20 @@ function ValiderModal({ item, onClose, onDone }) {
         const { error } = await sb.storage.from("bordereaux").upload(path, file, { contentType: file.type });
         if (error) throw error;
       }
-      const row = await q(
+      const row = await avecMode((avec) => q(
         sb.from("encaissements")
           .update({
             statut: "valide",
             date_paiement: date,
             reference_banque: ref.trim() || null,
-            mode_paiement: mode,
+            ...(avec ? { mode_paiement: mode } : {}),
             numero_recu: numero.trim() || null,
             bordereau_path: path,
           })
           .eq("id", item.id)
           .select()
           .single()
-      );
+      ));
       notify(`Paiement validé — reçu ${row.numero_recu}`);
       onDone({ ...row, nom: item.nom, classe: item.classe, type: item.type, numero: item.numero });
     });
