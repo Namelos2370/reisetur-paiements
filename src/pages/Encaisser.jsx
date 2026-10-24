@@ -56,7 +56,7 @@ export default function Encaisser({ preselect }) {
         return notify(`Le montant dépasse le reste à payer (${fcfa(tranche.solde)}).`, true);
 
       let path = null;
-      if (file) {
+      if (file && mode !== "especes") {
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
         path = `${crypto.randomUUID()}.${ext}`;
         const { error } = await sb.storage.from("bordereaux").upload(path, file, { contentType: file.type });
@@ -68,7 +68,7 @@ export default function Encaisser({ preselect }) {
             tranche_id: tranche.id,
             montant: m,
             date_paiement: date,
-            reference_banque: ref.trim() || null,
+            reference_banque: mode === "especes" ? null : ref.trim() || null,
             ...(avec ? { mode_paiement: mode } : {}),
             numero_recu: numero.trim() || null,
             bordereau_path: path,
@@ -125,6 +125,8 @@ export default function Encaisser({ preselect }) {
           ))}
         </select>
 
+        {tranche && (
+          <>
         <div className="row">
           <div>
             <label htmlFor="e-mt">Montant versé (FCFA)</label>
@@ -137,13 +139,21 @@ export default function Encaisser({ preselect }) {
         </div>
 
         <ChampsMode id="e" mode={mode} setMode={setMode} refVal={ref} setRef={setRef} />
-        <label htmlFor="e-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
-        <input id="e-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
-
-        <label htmlFor="e-file">Justificatif <span className="muted">(photo du bordereau ou capture du SMS, facultatif)</span></label>
-        <input key={fileKey} id="e-file" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0] || null)} />
+        {mode !== "especes" && (
+          <>
+            <label htmlFor="e-file">Justificatif <span className="muted">(photo du bordereau ou capture du SMS, facultatif)</span></label>
+            <input key={fileKey} id="e-file" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0] || null)} />
+          </>
+        )}
+        <details style={{ marginTop: 14 }}>
+          <summary className="muted">Numéro de reçu personnalisé (facultatif)</summary>
+          <label htmlFor="e-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
+          <input id="e-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
+        </details>
 
         <button className="primary block" disabled={busy || !tranche}>Valider l'encaissement</button>
+          </>
+        )}
       </form>
     </>
   );

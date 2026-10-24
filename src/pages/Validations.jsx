@@ -17,7 +17,7 @@ function ValiderModal({ item, onClose, onDone }) {
     e.preventDefault();
     run(async () => {
       let path = null;
-      if (file) {
+      if (file && mode !== "especes") {
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
         path = `${crypto.randomUUID()}.${ext}`;
         const { error } = await sb.storage.from("bordereaux").upload(path, file, { contentType: file.type });
@@ -28,7 +28,7 @@ function ValiderModal({ item, onClose, onDone }) {
           .update({
             statut: "valide",
             date_paiement: date,
-            reference_banque: ref.trim() || null,
+            reference_banque: mode === "especes" ? null : ref.trim() || null,
             ...(avec ? { mode_paiement: mode } : {}),
             numero_recu: numero.trim() || null,
             bordereau_path: path,
@@ -56,10 +56,17 @@ function ValiderModal({ item, onClose, onDone }) {
         <label htmlFor="v-dt">Date du versement</label>
         <input id="v-dt" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
         <ChampsMode id="v" mode={mode} setMode={setMode} refVal={ref} setRef={setRef} />
-        <label htmlFor="v-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
-        <input id="v-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
-        <label htmlFor="v-file">Justificatif <span className="muted">(photo du bordereau ou capture du SMS, facultatif)</span></label>
-        <input id="v-file" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0] || null)} />
+        {mode !== "especes" && (
+          <>
+            <label htmlFor="v-file">Justificatif <span className="muted">(photo du bordereau ou capture du SMS, facultatif)</span></label>
+            <input id="v-file" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0] || null)} />
+          </>
+        )}
+        <details style={{ marginTop: 14 }}>
+          <summary className="muted">Numéro de reçu personnalisé (facultatif)</summary>
+          <label htmlFor="v-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
+          <input id="v-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
+        </details>
         <button className="primary block" disabled={busy}>Valider ce paiement</button>
       </form>
     </Modal>
