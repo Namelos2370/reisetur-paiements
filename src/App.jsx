@@ -13,6 +13,7 @@ import Exports from "./pages/Exports.jsx";
 import PublicVerifier from "./pages/PublicVerifier.jsx";
 import PublicSituation from "./pages/PublicSituation.jsx";
 import Profil from "./pages/Profil.jsx";
+import Espace from "./pages/Espace.jsx";
 import { ECOLE, appliquerEcole } from "./config.js";
 
 const TABS = [
@@ -26,6 +27,7 @@ const MENU = [
   ["relances", "Relances et notes"],
   ["exports", "Exports Excel"],
   ["verifier", "Vérifier un reçu"],
+  ["espace", "Espace étudiant"],
   ["journal", "Journal"],
   ["profil", "Mon profil"],
 ];
@@ -145,6 +147,7 @@ function Shell({ onLogout }) {
         {tab === "relances" && <Relances onEncaisser={goEncaisser} />}
         {tab === "exports" && <Exports />}
         {tab === "verifier" && <Verifier />}
+        {tab === "espace" && <Espace />}
         {tab === "journal" && <Journal />}
         {tab === "profil" && <Profil onEcole={(r) => setNomCentre(r.nom)} />}
       </main>

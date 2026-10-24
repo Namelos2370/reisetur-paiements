@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
 import { fcfa, fdate } from "../utils.js";
+import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
 // Page publique « Mon profil » (/situation ou /profil) — matricule + code d'accès personnel.
@@ -21,10 +22,11 @@ export default function PublicSituation() {
   const [nomCentre, setNomCentre] = useState(ECOLE.nom);
   const [rester, setRester] = useState(true);
   const [pdfBusy, setPdfBusy] = useState("");
+  const [ecoleInfo, setEcoleInfo] = useState({});
 
   useEffect(() => {
     sb.rpc("ecole_publique").then(({ data }) => {
-      if (data) { appliquerEcole(data); setNomCentre(data.nom); }
+      if (data) { appliquerEcole(data); setNomCentre(data.nom); setEcoleInfo(data); }
       else sb.rpc("ecole_nom").then((r) => r.data && setNomCentre(r.data));
     });
     const memo = lire();
@@ -67,11 +69,24 @@ export default function PublicSituation() {
     setPdfBusy("");
   };
 
+  const attestation = async () => {
+    setPdfBusy("attestation");
+    try {
+      const { attestationPdf } = await import("../pdf.js");
+      await attestationPdf({ nom: res.nom, matricule: res.matricule, niveau: res.niveau, classe: res.classe, debut: cal?.debut, fin: cal?.fin });
+    } catch { setErr("L'attestation n'a pas pu être générée. Réessaie dans un instant."); }
+    setPdfBusy("");
+  };
+
   const tranches = (res?.tranches || []).filter((t) => t.montant_du > 0);
 
   const total = tranches.reduce((s, t) => s + t.montant_du, 0);
   const paye = tranches.reduce((s, t) => s + t.paye, 0);
   const pct = total ? Math.min(100, Math.round((paye / total) * 100)) : 100;
+  const inscr = tranches.filter((t) => t.type === "inscription" && (!res.niveau || !t.niveau || t.niveau === res.niveau));
+  const inscrite = inscr.length > 0 && inscr.every((t) => t.paye >= t.montant_du);
+  const cal = res?.calendrier;
+  const wa = waNumber(ecoleInfo.whatsapp);
   const prochaine = tranches.filter((t) => t.paye < t.montant_du).sort((a, b) => a.date_limite.localeCompare(b.date_limite))[0];
 
   return (
@@ -110,6 +125,19 @@ export default function PublicSituation() {
               </div>
             </section>
 
+
+            {res.annonces?.length > 0 && (
+              <section className="sit-annonces">
+                {res.annonces.map((a, i) => (
+                  <div className="sit-annonce" key={i}>
+                    <b>📢 {a.titre}</b>
+                    {a.message && <p>{a.message}</p>}
+                    <small>{fdate(a.date)}{a.classe ? ` · ${a.classe}` : ""}</small>
+                  </div>
+                ))}
+              </section>
+            )}
+
             <section className={"sit-card sit-resume" + (res.reste === 0 ? " ok" : "")}>
               <div className="sit-reste-l">{res.reste === 0 ? "Situation à jour" : "Reste à payer"}</div>
               <div className="sit-reste">{res.reste === 0 ? "Tout est réglé ✔" : fcfa(res.reste)}</div>
@@ -126,6 +154,20 @@ export default function PublicSituation() {
                 </p>
               )}
             </section>
+
+
+            {cal && (cal.debut || cal.fin || cal.examen || cal.horaires || cal.salle) && (
+              <>
+                <h3 className="sit-h">Ma classe</h3>
+                <section className="sit-card sit-cal">
+                  {cal.debut && <div><span>Début des cours</span><b>{fdate(cal.debut)}</b></div>}
+                  {cal.fin && <div><span>Fin des cours</span><b>{fdate(cal.fin)}</b></div>}
+                  {cal.examen && <div><span>Examen</span><b>{fdate(cal.examen)}</b></div>}
+                  {cal.horaires && <div><span>Horaires</span><b>{cal.horaires}</b></div>}
+                  {cal.salle && <div><span>Salle</span><b>{cal.salle}</b></div>}
+                </section>
+              </>
+            )}
 
             <h3 className="sit-h">Mes frais</h3>
             <section className="sit-list">
@@ -156,6 +198,23 @@ export default function PublicSituation() {
                 </div>
               )) : <p className="muted" style={{ margin: 0 }}>Aucun reçu pour le moment.</p>}
             </section>
+
+            <h3 className="sit-h">Mes documents</h3>
+            <section className="sit-list">
+              <div className="sit-row recu">
+                <div><b>Attestation d'inscription</b><div className="muted">{inscrite ? "Disponible" : "Disponible dès que l'inscription est réglée"}</div></div>
+                <button className="small" disabled={!inscrite || pdfBusy === "attestation"} onClick={attestation}>{pdfBusy === "attestation" ? "…" : "Télécharger"}</button>
+              </div>
+            </section>
+
+            {ecoleInfo.instructions_paiement && (
+              <>
+                <h3 className="sit-h">Comment payer</h3>
+                <section className="sit-card sit-pay">{ecoleInfo.instructions_paiement}</section>
+              </>
+            )}
+
+            {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">💬 Écrire à la direction sur WhatsApp</a>}
 
             <p className="sit-foot">Le versement se fait à la banque. Présente ton bordereau à l'administration pour recevoir ton reçu officiel.</p>
             <button className="block" onClick={() => { ecrire(null); setRes(null); setCode(""); setErr(""); }}>Quitter</button>

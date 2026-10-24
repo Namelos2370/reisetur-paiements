@@ -10,6 +10,8 @@ export const ECOLE = {
   contact: "", // ex. "Tél : 6 90 00 00 00  |  contact@reisetur237.com"
   ville: "Yaoundé",
   direction: "La Direction",
+  whatsapp: "",
+  instructionsPaiement: "",
   directeur: "", // nom affiché sous la ligne de signature (facultatif)
 };
 
@@ -20,6 +22,7 @@ export function appliquerEcole(row) {
   Object.assign(ECOLE, {
     nom: row.nom, sousTitre: row.sous_titre, adresse: row.adresse, contact: row.contact,
     ville: row.ville, direction: row.direction, directeur: row.directeur,
+    whatsapp: row.whatsapp || "", instructionsPaiement: row.instructions_paiement || "",
   });
   return ECOLE;
 }
