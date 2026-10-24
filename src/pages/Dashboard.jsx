@@ -1,21 +1,24 @@
 import { sb, q } from "../supabase.js";
-import { fcfa, fdate, nombre, TYPE } from "../utils.js";
+import { fcfa, fdate, modeLabel, nombre, TYPE } from "../utils.js";
 import { Loading, useLoad } from "../components/ui.jsx";
 
 export default function Dashboard({ onValider, onGo }) {
   const st = useLoad(
     async () => {
-      const [d, retards] = await Promise.all([
+      const [d, retards, encs] = await Promise.all([
         q(sb.rpc("tableau_de_bord")),
         q(sb.from("v_tranches").select("*").eq("statut", "en_retard").order("date_limite")),
+        q(sb.from("encaissements").select("mode_paiement, montant").eq("statut", "valide")).catch(() => []),
       ]);
-      return { d, retards };
+      const parMode = {};
+      encs.forEach((c) => { const m = modeLabel(c.mode_paiement); parMode[m] = (parMode[m] || 0) + c.montant; });
+      return { d, retards, parMode };
     },
     []
   );
   if (!st.data) return <Loading state={st} />;
 
-  const { d, retards } = st.data;
+  const { d, retards, parMode } = st.data;
   const reste = d.total_attendu - d.total_valide;
   const max = Math.max(1, ...d.par_mois.map((m) => m.total));
 
@@ -59,6 +62,19 @@ export default function Dashboard({ onValider, onGo }) {
         ) : (
           <p className="muted">Aucun encaissement validé pour le moment.</p>
         )}
+      </div>
+
+      <h3>Encaissé par mode de paiement</h3>
+      <div className="card">
+        {Object.keys(parMode).length ? (
+          <table>
+            <tbody>
+              {Object.entries(parMode).sort((a, b) => b[1] - a[1]).map(([m, t]) => (
+                <tr key={m}><td>{m}</td><td style={{ textAlign: "right" }}><b>{fcfa(t)}</b></td></tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <p className="muted">Aucun encaissement validé pour le moment.</p>}
       </div>
 
       <h3>Impayés en retard <span className="muted" style={{ fontWeight: 400 }}>({retards.length})</span></h3>

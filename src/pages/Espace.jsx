@@ -182,7 +182,7 @@ function Paiement({ initial, onSaved }) {
       <label htmlFor="pa-w">WhatsApp du centre <span className="muted">(bouton « Écrire à la direction »)</span></label>
       <input id="pa-w" type="tel" placeholder="ex. 6 90 00 00 00" value={f.whatsapp} onChange={set("whatsapp")} />
       <label htmlFor="pa-i">Comment payer</label>
-      <textarea id="pa-i" rows="5" placeholder={"Les paiements se font au centre, aux heures d'ouverture : …\nUn reçu officiel est remis à chaque versement."} value={f.instructions_paiement} onChange={set("instructions_paiement")} />
+      <textarea id="pa-i" rows="5" placeholder={"Au centre (espèces), aux heures d'ouverture : …\nOrange Money : n° … (nom du compte : …)\nMTN Mobile Money : n° … (nom du compte : …)\nBanque : …\nUn reçu officiel est remis à chaque versement."} value={f.instructions_paiement} onChange={set("instructions_paiement")} />
       <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Enregistrer</button>
     </form>
   );

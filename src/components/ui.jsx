@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { friendly } from "../utils.js";
+import { MODES, friendly, refHint, refLabel } from "../utils.js";
 
 const ToastCtx = createContext(() => {});
 export const useToast = () => useContext(ToastCtx);
@@ -39,6 +39,24 @@ export function useAction() {
     [notify]
   );
   return [run, busy];
+}
+
+// Champs « mode de paiement » + référence, communs à Encaisser et À valider
+export function ChampsMode({ mode, setMode, refVal, setRef, id }) {
+  return (
+    <div className="row">
+      <div>
+        <label htmlFor={id + "-mode"}>Mode de paiement</label>
+        <select id={id + "-mode"} value={mode} onChange={(e) => setMode(e.target.value)}>
+          {MODES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
+      </div>
+      <div>
+        <label htmlFor={id + "-ref"}>{refLabel(mode)}</label>
+        <input id={id + "-ref"} placeholder={refHint(mode)} value={refVal} onChange={(e) => setRef(e.target.value)} />
+      </div>
+    </div>
+  );
 }
 
 export function Badge({ def, children }) {

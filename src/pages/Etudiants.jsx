@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, STAT, TYPE, today } from "../utils.js";
+import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu, waLink, waNumber } from "../data.js";
@@ -286,7 +286,7 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
                 <tbody>
                   {st.data.encs.map((c) => (
                     <tr key={c.id}>
-                      <td>{c.numero_recu ? <b>{c.numero_recu}</b> : <span className="muted">Sans n° de reçu</span>}<br /><span className="muted">{c.reference_banque || ""}</span></td>
+                      <td>{c.numero_recu ? <b>{c.numero_recu}</b> : <span className="muted">Sans n° de reçu</span>}<br /><span className="muted">{[c.mode_paiement ? modeLabel(c.mode_paiement) : "", c.reference_banque || ""].filter(Boolean).join(" · ")}</span></td>
                       <td>{fdate(c.date_paiement)}</td>
                       <td>{fcfa(c.montant)}<br /><span className="muted">{TYPE[c.tranches.frais.type]} T{c.tranches.numero}</span></td>
                       <td>

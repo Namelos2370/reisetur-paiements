@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb, q } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
-import { Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { ChampsMode, Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
 import { telechargerRecu } from "../data.js";
 
 export default function Encaisser({ preselect }) {
@@ -15,6 +15,7 @@ export default function Encaisser({ preselect }) {
   const [montant, setMontant] = useState("");
   const [date, setDate] = useState(today());
   const [ref, setRef] = useState("");
+  const [mode, setMode] = useState("especes");
   const [numero, setNumero] = useState("");
   const [file, setFile] = useState(null);
   const [fileKey, setFileKey] = useState(0);
@@ -68,6 +69,7 @@ export default function Encaisser({ preselect }) {
             montant: m,
             date_paiement: date,
             reference_banque: ref.trim() || null,
+            mode_paiement: mode,
             numero_recu: numero.trim() || null,
             bordereau_path: path,
             statut: "valide",
@@ -134,18 +136,11 @@ export default function Encaisser({ preselect }) {
           </div>
         </div>
 
-        <div className="row">
-          <div>
-            <label htmlFor="e-ref">Référence du bordereau bancaire</label>
-            <input id="e-ref" placeholder="N° inscrit sur le bordereau" value={ref} onChange={(e) => setRef(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="e-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
-            <input id="e-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
-          </div>
-        </div>
+        <ChampsMode id="e" mode={mode} setMode={setMode} refVal={ref} setRef={setRef} />
+        <label htmlFor="e-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
+        <input id="e-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
 
-        <label htmlFor="e-file">Photo du bordereau</label>
+        <label htmlFor="e-file">Justificatif <span className="muted">(photo du bordereau ou capture du SMS, facultatif)</span></label>
         <input key={fileKey} id="e-file" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0] || null)} />
 
         <button className="primary block" disabled={busy || !tranche}>Valider l'encaissement</button>

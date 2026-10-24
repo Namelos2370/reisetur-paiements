@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { today } from "../utils.js";
+import { modeLabel, today } from "../utils.js";
 import { Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
 
 // ---------- Mise en forme ----------
@@ -100,14 +100,23 @@ function feuilleResume(rows) {
 }
 
 function feuilleEncaissements(list) {
-  const head = ["Date", "N° de reçu", "Référence bancaire", "Étudiant", "Classe", "Objet", "Montant (FCFA)"];
+  const head = ["Date", "N° de reçu", "Mode de paiement", "Référence", "Étudiant", "Classe", "Objet", "Montant (FCFA)"];
   const data = [head.map(H)];
   list.forEach((c) => data.push([
-    S(c.date_paiement), S(c.numero_recu), S(c.reference_banque), S(c.nom), S(c.classe),
+    S(c.date_paiement), S(c.numero_recu), S(modeLabel(c.mode_paiement)), S(c.reference_banque), S(c.nom), S(c.classe),
     S(c.type === "inscription" ? "Inscription" : `${TYPE[c.type] || ""} T${c.tranche || ""}`), N(c.montant),
   ]));
-  data.push([T("TOTAL"), T(`${list.length} paiement(s)`), T(""), T(""), T(""), T(""), N(list.reduce((s, c) => s + c.montant, 0), 1)]);
-  return { data, columns: [{ width: 12 }, { width: 18 }, { width: 20 }, { width: 34 }, { width: 22 }, { width: 22 }, { width: 18 }], stickyRowsCount: 1 };
+  data.push([T("TOTAL"), T(`${list.length} paiement(s)`), T(""), T(""), T(""), T(""), T(""), N(list.reduce((s, c) => s + c.montant, 0), 1)]);
+  return { data, columns: [{ width: 12 }, { width: 18 }, { width: 28 }, { width: 22 }, { width: 34 }, { width: 22 }, { width: 22 }, { width: 18 }], stickyRowsCount: 1 };
+}
+
+function feuilleModes(encs) {
+  const par = {};
+  encs.forEach((c) => { const m = modeLabel(c.mode_paiement); (par[m] ||= { n: 0, t: 0 }); par[m].n++; par[m].t += c.montant; });
+  const data = [["Mode de paiement", "Nombre de paiements", "Total encaissé (FCFA)"].map(H)];
+  Object.keys(par).sort().forEach((m) => data.push([S(m), N(par[m].n), N(par[m].t)]));
+  data.push([T("TOTAL"), N(encs.length, 1), N(encs.reduce((s, c) => s + c.montant, 0), 1)]);
+  return { data, columns: [{ width: 30 }, { width: 22 }, { width: 24 }], stickyRowsCount: 1 };
 }
 
 function feuilleMois(encs) {
@@ -171,6 +180,7 @@ export default function Exports() {
       const used = new Set();
       await ecrire([
         { nom: nomFeuille("Récapitulatif par mois", used), ...feuilleMois(encs) },
+        { nom: nomFeuille("Par mode de paiement", used), ...feuilleModes(encs) },
         { nom: nomFeuille("Tous les encaissements", used), ...feuilleEncaissements(encs) },
       ], `Reisetur237_Encaissements_par_mois_${suffixe}.xlsx`);
     }

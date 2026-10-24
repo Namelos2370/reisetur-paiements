@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
-import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { Badge, ChampsMode, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import { telechargerRecu } from "../data.js";
 
 function ValiderModal({ item, onClose, onDone }) {
@@ -9,6 +9,7 @@ function ValiderModal({ item, onClose, onDone }) {
   const [run, busy] = useAction();
   const [date, setDate] = useState(today());
   const [ref, setRef] = useState("");
+  const [mode, setMode] = useState(item.mode_paiement || "especes");
   const [numero, setNumero] = useState("");
   const [file, setFile] = useState(null);
 
@@ -28,6 +29,7 @@ function ValiderModal({ item, onClose, onDone }) {
             statut: "valide",
             date_paiement: date,
             reference_banque: ref.trim() || null,
+            mode_paiement: mode,
             numero_recu: numero.trim() || null,
             bordereau_path: path,
           })
@@ -51,19 +53,12 @@ function ValiderModal({ item, onClose, onDone }) {
         {TYPE[item.type]}, tranche {item.numero} — <b>{fcfa(item.montant)}</b>
       </p>
       <form onSubmit={submit}>
-        <div className="row">
-          <div>
-            <label htmlFor="v-dt">Date du versement à la banque</label>
-            <input id="v-dt" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="v-ref">Référence du bordereau bancaire</label>
-            <input id="v-ref" placeholder="N° inscrit sur le bordereau" value={ref} onChange={(e) => setRef(e.target.value)} />
-          </div>
-        </div>
+        <label htmlFor="v-dt">Date du versement</label>
+        <input id="v-dt" type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+        <ChampsMode id="v" mode={mode} setMode={setMode} refVal={ref} setRef={setRef} />
         <label htmlFor="v-nr">N° de reçu <span className="muted">(vide = généré automatiquement)</span></label>
         <input id="v-nr" placeholder="RT237-2026-0001" value={numero} onChange={(e) => setNumero(e.target.value)} />
-        <label htmlFor="v-file">Photo du bordereau</label>
+        <label htmlFor="v-file">Justificatif <span className="muted">(photo du bordereau ou capture du SMS, facultatif)</span></label>
         <input id="v-file" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0] || null)} />
         <button className="primary block" disabled={busy}>Valider ce paiement</button>
       </form>

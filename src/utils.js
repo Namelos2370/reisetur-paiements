@@ -83,3 +83,15 @@ export function lignesRappel(lignes) {
 
 export const libelleRappel = (l) =>
   (l.type === "inscription" ? "Frais d'inscription" : "Frais de scolarité") + (l.partiel ? " (solde)" : "");
+
+// ---- Modes de paiement ----
+export const MODES = [
+  ["especes", "Espèces (au centre)"],
+  ["banque", "Banque (bordereau / virement)"],
+  ["orange_money", "Orange Money"],
+  ["mtn_momo", "MTN Mobile Money"],
+];
+export const modeLabel = (m) => (MODES.find(([k]) => k === m) || [null, "Non précisé"])[1];
+export const refLabel = (m) =>
+  m === "banque" ? "Référence du bordereau bancaire" : m === "orange_money" || m === "mtn_momo" ? "ID de la transaction (SMS de confirmation)" : "Référence (facultatif)";
+export const refHint = (m) => (m === "banque" ? "N° inscrit sur le bordereau" : m === "orange_money" || m === "mtn_momo" ? "ex. MP2610241234.AB12" : "");

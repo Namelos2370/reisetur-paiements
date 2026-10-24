@@ -1,5 +1,5 @@
 import { ECOLE } from "./config.js";
-import { TYPE, dansJours, isoLocal, libelleRappel, lignesRappel } from "./utils.js";
+import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel } from "./utils.js";
 
 // jsPDF ne sait pas afficher les espaces insécables des nombres français : on les remplace.
 const nf = new Intl.NumberFormat("fr-FR");
@@ -111,7 +111,8 @@ export async function recuPdf(r) {
     ["Classe", [r.classe, r.niveau && `(niveau ${r.niveau})`].filter(Boolean).join(" ") || "-"],
     ["Objet du paiement", objet(r.type, r.tranche)],
     ["Date du versement", dlong(r.date_paiement)],
-    ["Référence bancaire", r.reference_banque || "-"],
+    ["Mode de paiement", modeLabel(r.mode_paiement)],
+    ["Référence", r.reference_banque || "-"],
   ];
   let y = 98;
   rows.forEach(([k, v]) => {

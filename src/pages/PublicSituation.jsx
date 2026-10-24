@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
-import { fcfa, fdate } from "../utils.js";
+import { fcfa, fdate, modeLabel } from "../utils.js";
 import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
@@ -59,7 +59,7 @@ export default function PublicSituation() {
       const { recuPdf } = await import("../pdf.js");
       const memeFrais = (res.tranches || []).filter((t) => t.type === r.type && (!r.niveau || t.niveau === r.niveau));
       await recuPdf({
-        numero_recu: r.numero_recu, montant: r.montant, date_paiement: r.date, reference_banque: r.reference_banque || "",
+        numero_recu: r.numero_recu, montant: r.montant, date_paiement: r.date, reference_banque: r.reference_banque || "", mode_paiement: r.mode_paiement || null,
         nom: res.nom, matricule: res.matricule, classe: r.classe ?? res.classe, niveau: r.niveau ?? res.niveau,
         type: r.type, tranche: r.tranche,
         reste: r.reste ?? memeFrais.reduce((s, t) => s + Math.max(0, t.montant_du - t.paye), 0),
@@ -194,7 +194,7 @@ export default function PublicSituation() {
             <section className="sit-list">
               {res.recus.length ? res.recus.map((r) => (
                 <div className="sit-row recu" key={r.numero_recu}>
-                  <div><b>{r.numero_recu}</b><div className="muted">{objet(r.type, r.tranche)} · {fdate(r.date)}</div></div>
+                  <div><b>{r.numero_recu}</b><div className="muted">{objet(r.type, r.tranche)} · {fdate(r.date)}{r.mode_paiement ? ` · ${modeLabel(r.mode_paiement)}` : ""}</div></div>
                   <div className="sit-recu-r"><b>{fcfa(r.montant)}</b><button className="small" disabled={pdfBusy === r.numero_recu} onClick={() => telecharger(r)}>{pdfBusy === r.numero_recu ? "…" : "Télécharger"}</button></div>
                 </div>
               )) : <p className="muted" style={{ margin: 0 }}>Aucun reçu pour le moment.</p>}
