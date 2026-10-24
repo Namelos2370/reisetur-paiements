@@ -14,18 +14,27 @@ function Annonces({ classes }) {
   const [message, setMessage] = useState("");
   const [classe, setClasse] = useState("");
   const [expire, setExpire] = useState("");
+  const [edit, setEdit] = useState(null); // id de l'annonce en modification
 
+  const vider = () => { setEdit(null); setTitre(""); setMessage(""); setClasse(""); setExpire(""); };
+  const modifier = (a) => {
+    setEdit(a.id); setTitre(a.titre); setMessage(a.message || ""); setClasse(a.classe || ""); setExpire(a.expire_le || "");
+    document.getElementById("an-t")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const add = (e) => {
     e.preventDefault();
     run(async () => {
-      await q(sb.from("annonces").insert({ titre: titre.trim(), message: message.trim(), classe: classe || null, expire_le: expire || null }));
-      setTitre(""); setMessage(""); setClasse(""); setExpire("");
-      notify("Annonce publiée.");
+      const row = { titre: titre.trim(), message: message.trim(), classe: classe || null, expire_le: expire || null };
+      if (edit) await q(sb.from("annonces").update(row).eq("id", edit));
+      else await q(sb.from("annonces").insert(row));
+      notify(edit ? "Annonce modifiée." : "Annonce publiée.");
+      vider();
       st.reload();
     });
   };
   const toggle = (a) => run(async () => { await q(sb.from("annonces").update({ actif: !a.actif }).eq("id", a.id)); st.reload(); });
   const del = (a) => {
+    if (edit === a.id) vider();
     if (!window.confirm("Supprimer cette annonce ?")) return;
     run(async () => { await q(sb.from("annonces").delete().eq("id", a.id)); notify("Annonce supprimée."); st.reload(); });
   };
@@ -49,7 +58,10 @@ function Annonces({ classes }) {
           </div>
           <div><label htmlFor="an-e">Visible jusqu'au <span className="muted">(facultatif)</span></label><input id="an-e" type="date" value={expire} onChange={(e) => setExpire(e.target.value)} /></div>
         </div>
-        <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Publier</button>
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button className="primary" disabled={busy}>{edit ? "Enregistrer les modifications" : "Publier"}</button>
+          {edit && <button type="button" onClick={vider}>Annuler</button>}
+        </div>
       </form>
       <Loading state={st} />
       {st.data && st.data.length > 0 && (
@@ -61,6 +73,7 @@ function Annonces({ classes }) {
                 <div className="muted">{a.classe || "Tout le centre"} · {fdate(a.created_at.slice(0, 10))}{a.expire_le ? ` · jusqu'au ${fdate(a.expire_le)}` : ""}{a.actif ? "" : " · masquée"}</div>
               </div>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button className="small" onClick={() => modifier(a)}>Modifier</button>
                 <button className="small" onClick={() => toggle(a)}>{a.actif ? "Masquer" : "Réafficher"}</button>
                 <button className="small danger" onClick={() => del(a)}>Supprimer</button>
               </div>
@@ -100,6 +113,10 @@ function Calendrier({ classes }) {
     });
   };
 
+  const supprimer = (r) => {
+    if (!window.confirm(`Supprimer le calendrier de « ${r.classe} » ?`)) return;
+    run(async () => { await q(sb.from("classes_infos").delete().eq("id", r.id)); if (classe === r.classe) choisir(""); notify("Calendrier supprimé."); st.reload(); });
+  };
   const toutes = [...new Set([...classes, ...(st.data || []).map((r) => r.classe)])].sort();
   return (
     <form className="card" onSubmit={save}>
@@ -126,9 +143,15 @@ function Calendrier({ classes }) {
       </div>
       <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Enregistrer ce calendrier</button>
       {(st.data || []).length > 0 && (
-        <p className="muted" style={{ marginTop: 14 }}>
-          Déjà renseignées : {(st.data || []).map((r) => `${r.classe}${r.debut ? ` (début ${fdate(r.debut)})` : ""}`).join(" · ")}
-        </p>
+        <div style={{ marginTop: 18 }}>
+          <p className="muted" style={{ marginBottom: 6 }}>Déjà renseignées (clique pour modifier) :</p>
+          {(st.data || []).map((r) => (
+            <div key={r.id} style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}>
+              <button type="button" className="link" onClick={() => choisir(r.classe)}>{r.classe}{r.debut ? ` — début ${fdate(r.debut)}` : ""}</button>
+              <button type="button" className="small danger" onClick={() => supprimer(r)}>Supprimer</button>
+            </div>
+          ))}
+        </div>
       )}
     </form>
   );
