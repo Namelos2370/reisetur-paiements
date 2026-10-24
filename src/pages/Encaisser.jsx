@@ -7,7 +7,15 @@ import { telechargerRecu } from "../data.js";
 export default function Encaisser({ preselect }) {
   const notify = useToast();
   const [run, busy] = useAction();
-  const etus = useLoad(() => q(sb.from("etudiants").select("id,nom,niveau,matricule").order("nom")), []);
+  // Seuls les étudiants qui ont encore un solde à payer (hors paiements déjà en attente de validation) sont proposés
+  const etus = useLoad(async () => {
+    const [liste, trs] = await Promise.all([
+      q(sb.from("etudiants").select("id,nom,niveau,matricule").order("nom")),
+      q(sb.from("v_tranches").select("etudiant_id,solde,a_valider").gt("solde", 0)),
+    ]);
+    const aPayer = new Set(trs.filter((t) => t.solde - t.a_valider > 0).map((t) => t.etudiant_id));
+    return liste.filter((e) => aPayer.has(e.id) || e.id === preselect);
+  }, []);
 
   const [etuId, setEtuId] = useState(preselect || "");
   const [tranches, setTranches] = useState([]);
@@ -108,7 +116,7 @@ export default function Encaisser({ preselect }) {
       )}
 
       <form className="card" onSubmit={submit}>
-        <label htmlFor="e-etu">Étudiant</label>
+        <label htmlFor="e-etu">Étudiant <span className="muted">({etus.data.length} avec un solde à payer)</span></label>
         <select id="e-etu" required value={etuId} onChange={(e) => setEtuId(e.target.value)}>
           <option value="">— Choisir —</option>
           {etus.data.map((e) => <option key={e.id} value={e.id}>{e.nom} ({e.niveau}) — {e.matricule}</option>)}

@@ -1,4 +1,5 @@
 import { sb, q } from "../supabase.js";
+import { useState } from "react";
 import { fcfa, fdate, modeLabel, nombre, TYPE } from "../utils.js";
 import { Loading, useLoad } from "../components/ui.jsx";
 
@@ -41,6 +42,7 @@ export default function Dashboard({ onValider, onGo }) {
     ]);
     return { d, retards, encs, trs, frais, etus };
   }, []);
+  const [tous, setTous] = useState(false);
   if (!st.data) return <Loading state={st} />;
 
   const { d, retards, encs, trs, frais, etus } = st.data;
@@ -73,7 +75,7 @@ export default function Dashboard({ onValider, onGo }) {
 
   // Derniers encaissements
   const parTranche = Object.fromEntries(trs.map((t) => [t.id, t]));
-  const derniers = encs.slice(0, 8).map((c) => ({ ...c, t: parTranche[c.tranche_id] || {} }));
+  const derniers = encs.slice(0, tous ? encs.length : 3).map((c) => ({ ...c, t: parTranche[c.tranche_id] || {} }));
 
   const aujourdhui = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
@@ -197,6 +199,11 @@ export default function Dashboard({ onValider, onGo }) {
               </tbody>
             </table>
           ) : <p className="muted">Aucun encaissement validé pour le moment.</p>}
+          {encs.length > 3 && (
+            <p style={{ margin: "14px 0 0" }}>
+              <button className="small" onClick={() => setTous((v) => !v)}>{tous ? "Voir moins" : `Voir plus (${encs.length - 3})`}</button>
+            </p>
+          )}
         </section>
 
         <section className="card tablewrap">
