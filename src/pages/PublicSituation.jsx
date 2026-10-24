@@ -130,9 +130,10 @@ export default function PublicSituation() {
               <section className="sit-annonces">
                 {res.annonces.map((a, i) => (
                   <div className="sit-annonce" key={i}>
+                    {a.date_evenement && <span className="sit-evt">📅 {fdate(a.date_evenement)}</span>}
                     <b>📢 {a.titre}</b>
                     {a.message && <p>{a.message}</p>}
-                    <small>{fdate(a.date)}{a.classe ? ` · ${a.classe}` : ""}</small>
+                    {a.classe && <small>{a.classe}</small>}
                   </div>
                 ))}
               </section>

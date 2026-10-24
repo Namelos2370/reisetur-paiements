@@ -9,22 +9,23 @@ import { Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
 function Annonces({ classes }) {
   const notify = useToast();
   const [run, busy] = useAction();
-  const st = useLoad(() => q(sb.from("annonces").select("*").order("created_at", { ascending: false })), []);
+  const st = useLoad(() => q(sb.from("annonces").select("*").order("date_evenement", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false })), []);
   const [titre, setTitre] = useState("");
   const [message, setMessage] = useState("");
   const [classe, setClasse] = useState("");
   const [expire, setExpire] = useState("");
+  const [evt, setEvt] = useState("");
   const [edit, setEdit] = useState(null); // id de l'annonce en modification
 
-  const vider = () => { setEdit(null); setTitre(""); setMessage(""); setClasse(""); setExpire(""); };
+  const vider = () => { setEdit(null); setTitre(""); setMessage(""); setClasse(""); setExpire(""); setEvt(""); };
   const modifier = (a) => {
-    setEdit(a.id); setTitre(a.titre); setMessage(a.message || ""); setClasse(a.classe || ""); setExpire(a.expire_le || "");
+    setEdit(a.id); setTitre(a.titre); setMessage(a.message || ""); setClasse(a.classe || ""); setExpire(a.expire_le || ""); setEvt(a.date_evenement || "");
     document.getElementById("an-t")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
   const add = (e) => {
     e.preventDefault();
     run(async () => {
-      const row = { titre: titre.trim(), message: message.trim(), classe: classe || null, expire_le: expire || null };
+      const row = { titre: titre.trim(), message: message.trim(), classe: classe || null, expire_le: expire || null, date_evenement: evt || null };
       if (edit) await q(sb.from("annonces").update(row).eq("id", edit));
       else await q(sb.from("annonces").insert(row));
       notify(edit ? "Annonce modifiée." : "Annonce publiée.");
@@ -49,6 +50,10 @@ function Annonces({ classes }) {
         <label htmlFor="an-m">Message <span className="muted">(facultatif)</span></label>
         <textarea id="an-m" rows="3" value={message} onChange={(e) => setMessage(e.target.value)} />
         <div className="row">
+          <div><label htmlFor="an-v">Date de l'événement <span className="muted">(facultatif)</span></label><input id="an-v" type="date" value={evt} onChange={(e) => setEvt(e.target.value)} /></div>
+          <div><label htmlFor="an-e">Visible jusqu'au <span className="muted">(par défaut : la date de l'événement)</span></label><input id="an-e" type="date" value={expire} onChange={(e) => setExpire(e.target.value)} /></div>
+        </div>
+        <div className="row">
           <div>
             <label htmlFor="an-c">Destinataires</label>
             <select id="an-c" value={classe} onChange={(e) => setClasse(e.target.value)}>
@@ -56,7 +61,6 @@ function Annonces({ classes }) {
               {classes.map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
-          <div><label htmlFor="an-e">Visible jusqu'au <span className="muted">(facultatif)</span></label><input id="an-e" type="date" value={expire} onChange={(e) => setExpire(e.target.value)} /></div>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
           <button className="primary" disabled={busy}>{edit ? "Enregistrer les modifications" : "Publier"}</button>
@@ -70,7 +74,7 @@ function Annonces({ classes }) {
             <div key={a.id} className="row" style={{ alignItems: "center", borderTop: "1px solid var(--line, #e5e9f0)", padding: "10px 0", opacity: a.actif ? 1 : 0.55 }}>
               <div>
                 <b>{a.titre}</b>
-                <div className="muted">{a.classe || "Tout le centre"} · {fdate(a.created_at.slice(0, 10))}{a.expire_le ? ` · jusqu'au ${fdate(a.expire_le)}` : ""}{a.actif ? "" : " · masquée"}</div>
+                <div className="muted">{a.date_evenement ? <b>📅 {fdate(a.date_evenement)}</b> : "Sans date"} · {a.classe || "Tout le centre"}{a.expire_le ? ` · jusqu'au ${fdate(a.expire_le)}` : ""}{a.actif ? "" : " · masquée"}</div>
               </div>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 <button className="small" onClick={() => modifier(a)}>Modifier</button>
@@ -88,7 +92,7 @@ function Annonces({ classes }) {
 function Calendrier({ classes }) {
   const notify = useToast();
   const [run, busy] = useAction();
-  const st = useLoad(() => q(sb.from("classes_infos").select("*")), []);
+  const st = useLoad(() => q(sb.from("classes_infos").select("*").order("debut", { ascending: true, nullsFirst: false })), []);
   const [classe, setClasse] = useState("");
   const [f, setF] = useState({ debut: "", fin: "", examen: "", horaires: "", salle: "" });
   const [libre, setLibre] = useState("");
