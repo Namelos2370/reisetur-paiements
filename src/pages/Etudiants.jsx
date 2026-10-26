@@ -296,6 +296,26 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
 
   const refresh = () => { st.reload(); onChanged(); };
 
+  // Modification d'une tranche (montant dû, échéance)
+  const [tr, setTr] = useState(null); // { id, frais_id, label, montant, date, min }
+  const ouvrirTr = (t) => setTr({ id: t.id, frais_id: t.frais_id, label: `${TYPE[t.type]} T${t.numero}`, montant: String(t.montant_du), date: t.date_limite, min: (t.paye || 0) + (t.a_valider || 0) });
+  const enregistrerTr = (e) => {
+    e.preventDefault();
+    const montant = Number(tr.montant);
+    if (!Number.isFinite(montant) || montant < 0) return notify("Montant invalide.", true);
+    if (montant < tr.min) return notify(`Impossible : ${fcfa(tr.min)} sont déjà payés ou en attente de validation sur cette tranche.`, true);
+    if (!tr.date) return notify("Indique une date d'échéance.", true);
+    run(async () => {
+      await q(sb.from("tranches").update({ montant_du: montant, date_limite: tr.date }).eq("id", tr.id));
+      // le total des frais reste égal à la somme de ses tranches
+      const somme = (await q(sb.from("tranches").select("montant_du").eq("frais_id", tr.frais_id))).reduce((a, x) => a + x.montant_du, 0);
+      if (somme > 0) await q(sb.from("frais").update({ montant_total: somme }).eq("id", tr.frais_id));
+      setTr(null);
+      notify("Tranche modifiée.");
+      refresh();
+    });
+  };
+
   const openBordereau = (path) =>
     run(async () => {
       const { data, error } = await sb.storage.from("bordereaux").createSignedUrl(path, 300);
@@ -365,7 +385,7 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
           <div className="tablewrap">
             {st.data.trs.length ? (
               <table>
-                <thead><tr><th>Frais</th><th>Niveau</th><th>Échéance</th><th>Dû</th><th>Payé</th><th>Statut</th></tr></thead>
+                <thead><tr><th>Frais</th><th>Niveau</th><th>Échéance</th><th>Dû</th><th>Payé</th><th>Statut</th><th></th></tr></thead>
                 <tbody>
                   {st.data.trs.map((t) => (
                     <tr key={t.id}>
@@ -375,12 +395,28 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
                       <td>{fcfa(t.montant_du)}</td>
                       <td>{fcfa(t.paye)}</td>
                       <td><Badge def={STAT[t.statut]} /></td>
+                      <td><button className="small" onClick={() => ouvrirTr(t)}>Modifier</button></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             ) : <p className="muted">Aucun frais défini.</p>}
           </div>
+
+          {tr && (
+            <form className="card" onSubmit={enregistrerTr}>
+              <h3 style={{ marginTop: 0 }}>Modifier : {tr.label}</h3>
+              <div className="row">
+                <div><label htmlFor="tr-m">Montant dû (FCFA)</label><input id="tr-m" type="number" min={tr.min} step="500" required value={tr.montant} onChange={(e) => setTr({ ...tr, montant: e.target.value })} /></div>
+                <div><label htmlFor="tr-d">Date d'échéance</label><input id="tr-d" type="date" required value={tr.date} onChange={(e) => setTr({ ...tr, date: e.target.value })} /></div>
+              </div>
+              {tr.min > 0 && <p className="muted" style={{ margin: "8px 0 0" }}>Minimum : {fcfa(tr.min)} (déjà payé ou en attente de validation).</p>}
+              <div className="actions" style={{ marginTop: 12 }}>
+                <button className="primary" disabled={busy}>Enregistrer</button>
+                <button type="button" onClick={() => setTr(null)}>Annuler</button>
+              </div>
+            </form>
+          )}
 
           <h3>Définir de nouveaux frais (2 tranches)</h3>
           <NouveauxFrais etudiantId={etudiant.id} niveau={etudiant.niveau} onCreated={refresh} />
