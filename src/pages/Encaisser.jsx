@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb, q, avecMode } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
-import { ChampsMode, Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { ChampsMode, Loading, useAction, useLoad, useToast, Icone } from "../components/ui.jsx";
 import { telechargerRecu } from "../data.js";
 
 export default function Encaisser({ preselect }) {
@@ -101,7 +101,7 @@ export default function Encaisser({ preselect }) {
 
       {last && (
         <div className="card success">
-          <b>✔ Encaissement validé</b>
+          <b><Icone nom="check" />Encaissement validé</b>
           <div className="recu-big">{last.numero_recu}</div>
           <p>
             {last.etudiant.nom} — {TYPE[last.tranche.type]}, tranche {last.tranche.numero} — <b>{fcfa(last.montant)}</b>

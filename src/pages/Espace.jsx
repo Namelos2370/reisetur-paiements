@@ -2,7 +2,7 @@ import { useState } from "react";
 import { sb, q, avecColonne } from "../supabase.js";
 import { appliquerEcole } from "../config.js";
 import { fdate } from "../utils.js";
-import { Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { Loading, useAction, useLoad, useToast, Icone } from "../components/ui.jsx";
 
 // Administration de l'« Espace étudiant » : annonces, calendrier des classes, paiement et contact.
 
@@ -74,7 +74,7 @@ function Annonces({ classes }) {
             <div key={a.id} className="row" style={{ alignItems: "center", borderTop: "1px solid var(--line, #e5e9f0)", padding: "10px 0", opacity: a.actif ? 1 : 0.55 }}>
               <div>
                 <b>{a.titre}</b>
-                <div className="muted">{a.date_evenement ? <b>📅 {fdate(a.date_evenement)}</b> : "Sans date"} · {a.classe || "Tout le centre"}{a.expire_le ? ` · jusqu'au ${fdate(a.expire_le)}` : ""}{a.actif ? "" : " · masquée"}</div>
+                <div className="muted">{a.date_evenement ? <b><Icone nom="calendar" />{fdate(a.date_evenement)}</b> : "Sans date"} · {a.classe || "Tout le centre"}{a.expire_le ? ` · jusqu'au ${fdate(a.expire_le)}` : ""}{a.actif ? "" : " · masquée"}</div>
               </div>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 <button className="small" onClick={() => modifier(a)}>Modifier</button>

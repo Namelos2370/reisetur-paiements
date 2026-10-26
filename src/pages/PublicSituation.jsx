@@ -115,7 +115,7 @@ export default function PublicSituation() {
     setBusy(false);
     if (error || !data) return setCoordMsg("Enregistrement impossible pour le moment. Réessaie dans un instant.");
     setRes((r) => ({ ...r, telephone: coord.tel.trim() || null, email: coord.email.trim() || null, ville: coord.ville.trim() || null }));
-    setCoord(null); setCoordMsg("Coordonnées enregistrées ✔");
+    setCoord(null); setCoordMsg("Coordonnées enregistrées");
   };
 
   // Parcours : un niveau par ligne, avec son résultat d'examen
@@ -199,7 +199,7 @@ export default function PublicSituation() {
 
             <section className={"sit-card sit-resume" + (res.reste === 0 ? " ok" : "")}>
               <div className="sit-reste-l">{res.reste === 0 ? "Situation à jour" : "Reste à payer"}</div>
-              <div className="sit-reste">{res.reste === 0 ? "Tout est réglé ✔" : fcfa(res.reste)}</div>
+              <div className="sit-reste">{res.reste === 0 ? "Tout est réglé" : fcfa(res.reste)}</div>
               <div className="sit-bar" role="progressbar" aria-valuenow={pct} aria-valuemin="0" aria-valuemax="100"><i style={{ width: pct + "%" }} /></div>
               <div className="sit-duo">
                 <div><span>Total dû</span><b>{fcfa(total)}</b></div>

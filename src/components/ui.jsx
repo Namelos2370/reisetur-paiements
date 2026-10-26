@@ -98,3 +98,15 @@ export function Loading({ state }) {
   if (state.error) return <p className="badge bad">{friendly(state.error)}</p>;
   return null;
 }
+
+// Petites icônes en traits fins, à la couleur du texte
+const TRACES = {
+  check: ["M20 6 9 17l-5-5"],
+  save: ["M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z", "M17 21v-8H7v8", "M7 3v5h8"],
+  calendar: ["M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", "M16 2v4", "M8 2v4", "M3 10h18"],
+};
+export const Icone = ({ nom, taille = 16 }) => (
+  <svg width={taille} height={taille} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ verticalAlign: "-3px", marginRight: 6 }}>
+    {TRACES[nom].map((d, i) => <path key={i} d={d} />)}
+  </svg>
+);

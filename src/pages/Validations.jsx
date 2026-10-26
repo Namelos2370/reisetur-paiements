@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { sb, q, avecMode } from "../supabase.js";
 import { fcfa, fdate, today, TYPE } from "../utils.js";
-import { Badge, ChampsMode, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { Badge, ChampsMode, Loading, Modal, useAction, useLoad, useToast, Icone } from "../components/ui.jsx";
 import { telechargerRecu } from "../data.js";
 
 function ValiderModal({ item, onClose, onDone }) {
@@ -118,7 +118,7 @@ export default function Validations() {
       <h2>Paiements à valider</h2>
       {done && (
         <div className="card success">
-          <b>✔ Paiement validé</b>
+          <b><Icone nom="check" />Paiement validé</b>
           <div className="recu-big">{done.numero_recu}</div>
           <p>{done.nom} — {TYPE[done.type]}, tranche {done.numero} — <b>{fcfa(done.montant)}</b><br />
             <span className="muted">Remets ce numéro de reçu à l'étudiant.</span></p>

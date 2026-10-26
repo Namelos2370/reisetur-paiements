@@ -1,7 +1,7 @@
 import { sb, q } from "../supabase.js";
 import { useState } from "react";
 import { fcfa, fdate, modeLabel, nombre, TYPE } from "../utils.js";
-import { Loading, useLoad } from "../components/ui.jsx";
+import { Loading, useLoad, Icone } from "../components/ui.jsx";
 import { joursDepuis } from "./Sauvegarde.jsx";
 
 const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -97,7 +97,7 @@ export default function Dashboard({ onValider, onGo }) {
 
       {(joursSauv == null || joursSauv > 7) && (
         <div className="dash-alerte">
-          <span>💾 {joursSauv == null ? "Aucune sauvegarde de tes données n'a encore été faite." : `Dernière sauvegarde il y a ${joursSauv} jours.`}</span>
+          <span><Icone nom="save" />{joursSauv == null ? "Aucune sauvegarde de tes données n'a encore été faite." : `Dernière sauvegarde il y a ${joursSauv} jours.`}</span>
           <button className="small" onClick={() => onGo("sauvegarde")}>Sauvegarder maintenant</button>
         </div>
       )}

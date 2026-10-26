@@ -55,7 +55,7 @@ export default function PublicVerifier() {
 
       {res && res !== "introuvable" && res.statut === "valide" && (
         <div className="card success" style={{ marginTop: 20, marginBottom: 0 }}>
-          <Badge def={["✔ Reçu authentique", "ok"]} />
+          <Badge def={["Reçu authentique", "ok"]} />
           <table style={{ marginTop: 12 }}>
             <tbody>
               <tr><td>Étudiant</td><td><b>{res.etudiant_nom}</b></td></tr>

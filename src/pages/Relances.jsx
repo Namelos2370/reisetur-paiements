@@ -4,7 +4,7 @@ import { fcfa, fdate, fdatetime, limiteRappel, fixerLimiteRappel } from "../util
 import { chargerRelances, messageWhatsApp, noterRappel, waLink, waNumber } from "../data.js";
 import { notesPdf } from "../pdf.js";
 import { Detail } from "./Etudiants.jsx";
-import { Badge, Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
+import { Badge, Loading, useAction, useLoad, useToast, Icone } from "../components/ui.jsx";
 
 // Un étudiant en retard est « à relancer » s'il n'a pas reçu de rappel depuis ce nombre de jours
 const DELAI = 7;
@@ -69,7 +69,7 @@ export default function Relances({ onEncaisser }) {
             <p className="muted" style={{ margin: "8px 0 0" }}>Chaque clic ouvre WhatsApp avec le message prêt ; l'envoi est noté et l'étudiant sort de la liste pendant {DELAI} jours.</p>
           </>
         ) : (
-          <p style={{ margin: 0 }}>✅ Personne à relancer aujourd'hui.</p>
+          <p style={{ margin: 0 }}><Icone nom="check" />Personne à relancer aujourd'hui.</p>
         )}
       </div>
 
