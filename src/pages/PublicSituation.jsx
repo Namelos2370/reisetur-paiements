@@ -13,6 +13,8 @@ const ecrire = (v) => { try { v ? localStorage.setItem(CLE, JSON.stringify(v)) :
 const objet = (type, numero) => (type === "inscription" ? "Inscription" : `Scolarité — tranche ${numero}`);
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
+const ONGLETS = [["accueil", "🏠", "Accueil"], ["paiements", "💳", "Paiements"], ["cours", "📚", "Cours"], ["documents", "📄", "Documents"], ["profil", "👤", "Profil"]];
+
 export default function PublicSituation() {
   const [matricule, setMatricule] = useState("");
   const [code, setCode] = useState("");
@@ -88,9 +90,11 @@ export default function PublicSituation() {
     setPdfBusy("");
   };
 
+  const [onglet, setOnglet] = useState("accueil");
+  const aller = (k) => { setOnglet(k); window.scrollTo({ top: 0 }); };
   const [coord, setCoord] = useState(null); // { tel, email, ville } en cours de saisie
   const [coordMsg, setCoordMsg] = useState("");
-  const ouvrirCoord = () => { setCoordMsg(""); setCoord({ tel: res.telephone || "", email: res.email || "", ville: res.ville || "" }); setTimeout(() => document.getElementById("coordonnees")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
+  const ouvrirCoord = () => { setOnglet("profil"); setCoordMsg(""); setCoord({ tel: res.telephone || "", email: res.email || "", ville: res.ville || "" }); setTimeout(() => document.getElementById("coordonnees")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
   const enregistrerCoord = async (e) => {
     e.preventDefault();
     setBusy(true); setCoordMsg("");
@@ -157,7 +161,8 @@ export default function PublicSituation() {
               </div>
             </section>
 
-
+            {onglet === "accueil" && (
+              <>
             {!res.telephone && !coord && (
               <section className="sit-annonce" style={{ background: "#eef4ff", borderColor: "#b9d0ff" }}>
                 <b>📱 Ajoute ton numéro WhatsApp</b>
@@ -196,7 +201,55 @@ export default function PublicSituation() {
               )}
             </section>
 
+              </>
+            )}
 
+            {onglet === "paiements" && (
+              <>
+            <h3 className="sit-h">Mes frais</h3>
+            <section className="sit-list">
+              {tranches.map((t, i) => {
+                const reglee = t.paye >= t.montant_du;
+                const retard = !reglee && t.date_limite < aujourdhui();
+                const etat = reglee ? ["Payée", "ok"] : retard ? ["Échéance dépassée", "bad"] : t.paye > 0 ? ["Partiel", "warn"] : ["À venir", "neutral"];
+                const p = t.montant_du ? Math.round((t.paye / t.montant_du) * 100) : 100;
+                return (
+                  <div className="sit-row" key={i}>
+                    <div className="sit-row-top"><b>{objet(t.type, t.numero)}</b><Badge def={etat} /></div>
+                    <div className="sit-bar small"><i style={{ width: p + "%" }} /></div>
+                    <div className="sit-row-bot">
+                      <span>{fcfa(t.paye)} payés sur {fcfa(t.montant_du)}</span>
+                      {!reglee && <span>Avant le {fdate(t.date_limite)}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+
+            <h3 className="sit-h">Mes reçus</h3>
+            <section className="sit-list">
+              {res.recus.length ? res.recus.map((r) => (
+                <div className="sit-row recu" key={r.numero_recu}>
+                  <div><b>{r.numero_recu}</b><div className="muted">{objet(r.type, r.tranche)} · {fdate(r.date)}{r.mode_paiement ? ` · ${modeLabel(r.mode_paiement)}` : ""}</div></div>
+                  <div className="sit-recu-r"><b>{fcfa(r.montant)}</b><button className="small" disabled={pdfBusy === r.numero_recu} onClick={() => telecharger(r)}>{pdfBusy === r.numero_recu ? "…" : "Télécharger"}</button></div>
+                </div>
+              )) : <p className="muted" style={{ margin: 0 }}>Aucun reçu pour le moment.</p>}
+            </section>
+
+            {ecoleInfo.instructions_paiement && (
+              <>
+                <h3 className="sit-h">Comment payer</h3>
+                <section className="sit-card sit-pay">{ecoleInfo.instructions_paiement}</section>
+              </>
+            )}
+
+            <p className="sit-foot">Les paiements se font au centre : un reçu officiel t'est remis à chaque versement.</p>
+
+              </>
+            )}
+
+            {onglet === "cours" && (
+              <>
             {cal && (cal.debut || cal.fin || cal.examen || cal.horaires || cal.salle || cal.formateur) && (
               <>
                 <h3 className="sit-h">Ma classe</h3>
@@ -231,36 +284,13 @@ export default function PublicSituation() {
               </>
             )}
 
-            <h3 className="sit-h">Mes frais</h3>
-            <section className="sit-list">
-              {tranches.map((t, i) => {
-                const reglee = t.paye >= t.montant_du;
-                const retard = !reglee && t.date_limite < aujourdhui();
-                const etat = reglee ? ["Payée", "ok"] : retard ? ["Échéance dépassée", "bad"] : t.paye > 0 ? ["Partiel", "warn"] : ["À venir", "neutral"];
-                const p = t.montant_du ? Math.round((t.paye / t.montant_du) * 100) : 100;
-                return (
-                  <div className="sit-row" key={i}>
-                    <div className="sit-row-top"><b>{objet(t.type, t.numero)}</b><Badge def={etat} /></div>
-                    <div className="sit-bar small"><i style={{ width: p + "%" }} /></div>
-                    <div className="sit-row-bot">
-                      <span>{fcfa(t.paye)} payés sur {fcfa(t.montant_du)}</span>
-                      {!reglee && <span>Avant le {fdate(t.date_limite)}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </section>
+              {!(cal && (cal.debut || cal.fin || cal.examen || cal.horaires || cal.salle || cal.formateur)) && lignesParcours.length === 0 && <p className="muted">Le calendrier de ta classe sera bientôt publié.</p>}
 
-            <h3 className="sit-h">Mes reçus</h3>
-            <section className="sit-list">
-              {res.recus.length ? res.recus.map((r) => (
-                <div className="sit-row recu" key={r.numero_recu}>
-                  <div><b>{r.numero_recu}</b><div className="muted">{objet(r.type, r.tranche)} · {fdate(r.date)}{r.mode_paiement ? ` · ${modeLabel(r.mode_paiement)}` : ""}</div></div>
-                  <div className="sit-recu-r"><b>{fcfa(r.montant)}</b><button className="small" disabled={pdfBusy === r.numero_recu} onClick={() => telecharger(r)}>{pdfBusy === r.numero_recu ? "…" : "Télécharger"}</button></div>
-                </div>
-              )) : <p className="muted" style={{ margin: 0 }}>Aucun reçu pour le moment.</p>}
-            </section>
+              </>
+            )}
 
+            {onglet === "documents" && (
+              <>
             <h3 className="sit-h">Mes documents</h3>
             <section className="sit-list">
               <div className="sit-row recu">
@@ -281,6 +311,11 @@ export default function PublicSituation() {
               ))}
             </section>
 
+              </>
+            )}
+
+            {onglet === "profil" && (
+              <>
             <h3 className="sit-h" id="coordonnees">Mes coordonnées</h3>
             <section className="sit-card">
               {!coord ? (
@@ -310,17 +345,18 @@ export default function PublicSituation() {
               )}
             </section>
 
-            {ecoleInfo.instructions_paiement && (
-              <>
-                <h3 className="sit-h">Comment payer</h3>
-                <section className="sit-card sit-pay">{ecoleInfo.instructions_paiement}</section>
+            {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">💬 Écrire à la direction sur WhatsApp</a>}
+
+            <button className="block" onClick={() => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); }}>Quitter</button>
+
               </>
             )}
 
-            {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">💬 Écrire à la direction sur WhatsApp</a>}
-
-            <p className="sit-foot">Les paiements se font au centre : un reçu officiel t'est remis à chaque versement.</p>
-            <button className="block" onClick={() => { ecrire(null); setRes(null); setCode(""); setErr(""); }}>Quitter</button>
+            <nav className="sit-tabs" aria-label="Navigation">
+              {ONGLETS.map(([k, ico, label]) => (
+                <button key={k} className={onglet === k ? "on" : ""} onClick={() => aller(k)} aria-current={onglet === k ? "page" : undefined}><span aria-hidden="true">{ico}</span>{label}</button>
+              ))}
+            </nav>
           </>
         )}
       </main>
