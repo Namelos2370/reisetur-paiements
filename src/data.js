@@ -37,10 +37,14 @@ export async function telechargerRecu(encaissementId) {
 // ---- Relances ----
 // Un étudiant apparaît s'il lui reste quelque chose à payer, hors paiements déjà saisis mais pas encore validés.
 export async function chargerRelances() {
-  const [etus, trs] = await Promise.all([
+  const [etus, trs, rap] = await Promise.all([
     q(sb.from("etudiants").select("*").order("nom")),
     q(sb.from("v_tranches").select("*").gt("solde", 0)),
+    // historique des rappels (ignoré tant que la table n'existe pas)
+    sb.from("rappels").select("etudiant_id, canal, created_at").order("created_at", { ascending: false }).limit(2000).then((r) => r.data || []),
   ]);
+  const dernier = {};
+  rap.forEach((r) => { if (!dernier[r.etudiant_id]) dernier[r.etudiant_id] = r; });
   const t0 = today();
   const by = {};
   trs.forEach((t) => {
@@ -73,6 +77,7 @@ export async function chargerRelances() {
         total: lignes.reduce((s, l) => s + l.reste, 0),
         prochaine: lignes[0].date_limite,
         enRetard: lignes.some((l) => l.retard),
+        dernierRappel: dernier[e.id]?.created_at || null,
       };
     })
     .sort((a, b) => (a.classe || "").localeCompare(b.classe || "") || a.nom.localeCompare(b.nom));
@@ -104,5 +109,10 @@ export function messageWhatsApp(s) {
 }
 
 export const waLink = (tel, message) => `https://wa.me/${waNumber(tel)}?text=${encodeURIComponent(message)}`;
+
+// Note un rappel envoyé (sans bloquer l'envoi si la table n'existe pas encore)
+export async function noterRappel(etudiantId, canal) {
+  await sb.from("rappels").insert({ etudiant_id: etudiantId, canal });
+}
 
 export { TYPE };

@@ -14,6 +14,7 @@ import PublicVerifier from "./pages/PublicVerifier.jsx";
 import PublicSituation from "./pages/PublicSituation.jsx";
 import Profil from "./pages/Profil.jsx";
 import Espace from "./pages/Espace.jsx";
+import Sauvegarde from "./pages/Sauvegarde.jsx";
 import { ECOLE, appliquerEcole } from "./config.js";
 
 const TABS = [
@@ -29,6 +30,7 @@ const MENU = [
   ["verifier", "Vérifier un reçu"],
   ["espace", "Espace étudiant"],
   ["journal", "Journal"],
+  ["sauvegarde", "Sauvegarde"],
   ["profil", "Mon profil"],
 ];
 
@@ -46,18 +48,6 @@ function Login({ message, onDone }) {
     });
   };
 
-  const signUp = (e) => {
-    e.preventDefault();
-    run(async () => {
-      if (!email.trim() || password.length < 8)
-        return notify("Saisis un email et un mot de passe de 8 caractères minimum.", true);
-      const { data, error } = await sb.auth.signUp({ email: email.trim(), password });
-      if (error) throw error;
-      if (data.session) await onDone();
-      else notify("Compte créé. Confirme l'email reçu, puis connecte-toi.");
-    });
-  };
-
   return (
     <div className="center card">
       <img src="/logo.png" alt="" style={{ height: 110, display: "block", margin: "0 auto 8px" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -71,9 +61,7 @@ function Login({ message, onDone }) {
         <input id="pw" type="password" autoComplete="current-password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
         <button className="primary block" disabled={busy}>Se connecter</button>
       </form>
-      <p className="muted" style={{ fontSize: ".9rem" }}>
-        Première utilisation ? <a href="#" onClick={signUp}>Créer le compte administrateur</a>
-      </p>
+      <p className="muted" style={{ fontSize: ".9rem" }}>Accès réservé à l'administration du centre.</p>
     </div>
   );
 }
@@ -149,6 +137,7 @@ function Shell({ onLogout }) {
         {tab === "verifier" && <Verifier />}
         {tab === "espace" && <Espace />}
         {tab === "journal" && <Journal />}
+        {tab === "sauvegarde" && <Sauvegarde />}
         {tab === "profil" && <Profil onEcole={(r) => setNomCentre(r.nom)} />}
       </main>
     </>

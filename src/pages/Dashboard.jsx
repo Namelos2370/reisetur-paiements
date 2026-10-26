@@ -2,6 +2,7 @@ import { sb, q } from "../supabase.js";
 import { useState } from "react";
 import { fcfa, fdate, modeLabel, nombre, TYPE } from "../utils.js";
 import { Loading, useLoad } from "../components/ui.jsx";
+import { joursDepuis } from "./Sauvegarde.jsx";
 
 const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 const ym = (d) => d.slice(0, 7);
@@ -32,20 +33,22 @@ function Kpi({ label, value, sub, tone, action }) {
 
 export default function Dashboard({ onValider, onGo }) {
   const st = useLoad(async () => {
-    const [d, retards, encs, trs, frais, etus] = await Promise.all([
+    const [d, retards, encs, trs, frais, etus, sauv] = await Promise.all([
       q(sb.rpc("tableau_de_bord")),
       q(sb.from("v_tranches").select("*").eq("statut", "en_retard").order("date_limite")),
       q(sb.from("encaissements").select("tranche_id, montant, date_paiement, mode_paiement, numero_recu").eq("statut", "valide").order("date_paiement", { ascending: false })).catch(() => []),
       q(sb.from("v_tranches").select("id, etudiant_nom, type, numero")),
       q(sb.from("v_frais").select("etudiant_id, classe, montant_total, paye, solde, a_valider")),
       q(sb.from("etudiants").select("id, classe")),
+      sb.from("sauvegardes").select("created_at").order("created_at", { ascending: false }).limit(1).then((r) => r.data?.[0]?.created_at || null),
     ]);
-    return { d, retards, encs, trs, frais, etus };
+    return { d, retards, encs, trs, frais, etus, sauv };
   }, []);
   const [tous, setTous] = useState(false);
   if (!st.data) return <Loading state={st} />;
 
-  const { d, retards, encs, trs, frais, etus } = st.data;
+  const { d, retards, encs, trs, frais, etus, sauv } = st.data;
+  const joursSauv = sauv ? joursDepuis(sauv) : null;
   const reste = Math.max(0, d.total_attendu - d.total_valide);
   const taux = pct(d.total_valide, d.total_attendu);
 
@@ -91,6 +94,13 @@ export default function Dashboard({ onValider, onGo }) {
           <button onClick={() => onGo("relances")}>Relancer les impayés</button>
         </div>
       </div>
+
+      {(joursSauv == null || joursSauv > 7) && (
+        <div className="dash-alerte">
+          <span>💾 {joursSauv == null ? "Aucune sauvegarde de tes données n'a encore été faite." : `Dernière sauvegarde il y a ${joursSauv} jours.`}</span>
+          <button className="small" onClick={() => onGo("sauvegarde")}>Sauvegarder maintenant</button>
+        </div>
+      )}
 
       <section className="dash-hero">
         <div className="dash-hero-top">

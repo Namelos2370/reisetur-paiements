@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { fcfa, fdate, limiteRappel, fixerLimiteRappel } from "../utils.js";
-import { chargerRelances, messageWhatsApp, waLink, waNumber } from "../data.js";
+import { fcfa, fdate, fdatetime, limiteRappel, fixerLimiteRappel } from "../utils.js";
+import { chargerRelances, messageWhatsApp, noterRappel, waLink, waNumber } from "../data.js";
 import { notesPdf } from "../pdf.js";
 import { Detail } from "./Etudiants.jsx";
 import { Badge, Loading, useAction, useLoad, useToast } from "../components/ui.jsx";
+
+// Un étudiant en retard est « à relancer » s'il n'a pas reçu de rappel depuis ce nombre de jours
+const DELAI = 7;
 
 export default function Relances({ onEncaisser }) {
   const notify = useToast();
@@ -12,18 +15,19 @@ export default function Relances({ onEncaisser }) {
   const st = useLoad(chargerRelances, []);
   const [search, setSearch] = useState("");
   const [classe, setClasse] = useState("");
-  const [filtre, setFiltre] = useState("tous"); // tous | retard | avenir
+  const [filtre, setFiltre] = useState("aujourdhui"); // aujourdhui | tous | retard | avenir
   const [open, setOpen] = useState(null);
   const [, maj] = useState(0);
 
   if (!st.data) return <Loading state={st} />;
 
+  const jamais = (s) => !s.dernierRappel || (Date.now() - new Date(s.dernierRappel).getTime()) / 86400000 >= DELAI;
   const classes = [...new Set(st.data.map((s) => s.classe).filter(Boolean))].sort();
   const list = st.data.filter(
     (s) =>
       (s.nom + " " + (s.matricule || "")).toLowerCase().includes(search.toLowerCase()) &&
       (!classe || s.classe === classe) &&
-      (filtre === "tous" || (filtre === "retard" ? s.enRetard : !s.enRetard))
+      (filtre === "tous" || (filtre === "aujourdhui" ? s.enRetard && jamais(s) : filtre === "retard" ? s.enRetard : !s.enRetard))
   );
   const total = list.reduce((s, x) => s + x.total, 0);
   const sansTel = list.filter((s) => !waNumber(s.telephone)).length;
@@ -41,7 +45,11 @@ export default function Relances({ onEncaisser }) {
       return;
     }
     window.open(waLink(s.telephone, messageWhatsApp(s)), "_blank", "noopener");
+    noterRappel(s.id, "whatsapp").then(st.reload).catch(() => {});
   };
+  const note = (s) => run(async () => { await notesPdf([s]); await noterRappel(s.id, "note").catch(() => {}); st.reload(); });
+  const aRelancer = st.data.filter((s) => s.enRetard && jamais(s) && (!classe || s.classe === classe));
+  const suivant = aRelancer.find((s) => waNumber(s.telephone));
 
   return (
     <>
@@ -49,6 +57,21 @@ export default function Relances({ onEncaisser }) {
       <p className="muted">
         Clique sur un nom pour ouvrir sa fiche : s'il a payé entre-temps, encaisse son paiement ou régularise sa situation, puis la liste se met à jour. Sinon, envoie le WhatsApp ou imprime la note. Les paiements déjà saisis mais pas encore validés ne sont pas comptés.
       </p>
+
+      <div className={"card" + (aRelancer.length ? "" : " success")} style={{ marginBottom: 12 }}>
+        {aRelancer.length ? (
+          <>
+            <p style={{ margin: 0 }}><b>{aRelancer.length} étudiant(s) à relancer aujourd'hui</b> : échéance dépassée et aucun rappel depuis {DELAI} jours.</p>
+            <div className="actions" style={{ marginTop: 10 }}>
+              {suivant && <button className="primary small" onClick={() => whatsapp(suivant)}>Relancer le suivant : {suivant.nom}</button>}
+              <button className="small" onClick={() => setFiltre("aujourdhui")}>Voir la liste</button>
+            </div>
+            <p className="muted" style={{ margin: "8px 0 0" }}>Chaque clic ouvre WhatsApp avec le message prêt ; l'envoi est noté et l'étudiant sort de la liste pendant {DELAI} jours.</p>
+          </>
+        ) : (
+          <p style={{ margin: 0 }}>✅ Personne à relancer aujourd'hui.</p>
+        )}
+      </div>
 
       <div className="card" style={{ marginBottom: 12 }}>
         <label htmlFor="rl-lim">Date limite indiquée sur les notes et les WhatsApp</label>
@@ -63,7 +86,7 @@ export default function Relances({ onEncaisser }) {
         </select>
       </div>
       <div className="actions" style={{ marginBottom: 16 }}>
-        {[["tous", "Tous"], ["retard", "Échéance dépassée"], ["avenir", "À venir"]].map(([k, label]) => (
+        {[["aujourdhui", "À relancer aujourd'hui"], ["tous", "Tous"], ["retard", "Échéance dépassée"], ["avenir", "À venir"]].map(([k, label]) => (
           <button key={k} className={"small" + (filtre === k ? " primary" : "")} onClick={() => setFiltre(k)}>{label}</button>
         ))}
         <button
@@ -80,7 +103,7 @@ export default function Relances({ onEncaisser }) {
         {list.length ? (
           <>
             <table>
-              <thead><tr><th>Étudiant</th><th>Reste à payer</th><th>Prochaine échéance</th><th></th></tr></thead>
+              <thead><tr><th>Étudiant</th><th>Reste à payer</th><th>Prochaine échéance</th><th>Dernier rappel</th><th></th></tr></thead>
               <tbody>
                 {list.map((s) => (
                   <tr key={s.id}>
@@ -90,11 +113,12 @@ export default function Relances({ onEncaisser }) {
                       {fdate(s.prochaine)}<br />
                       {s.enRetard ? <Badge def={["Dépassée", "bad"]} /> : <Badge def={["À venir", "neutral"]} />}
                     </td>
+                    <td>{s.dernierRappel ? fdatetime(s.dernierRappel) : <span className="muted">Jamais</span>}</td>
                     <td className="actions">
                       <button className="small" onClick={() => whatsapp(s)}>
                         {waNumber(s.telephone) ? "WhatsApp" : "+ N° WhatsApp"}
                       </button>
-                      <button className="small" disabled={busy} onClick={() => run(() => notesPdf([s]))}>Note PDF</button>
+                      <button className="small" disabled={busy} onClick={() => note(s)}>Note PDF</button>
                     </td>
                   </tr>
                 ))}

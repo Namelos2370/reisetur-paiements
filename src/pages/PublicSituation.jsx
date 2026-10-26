@@ -90,7 +90,7 @@ export default function PublicSituation() {
 
   const [coord, setCoord] = useState(null); // { tel, email, ville } en cours de saisie
   const [coordMsg, setCoordMsg] = useState("");
-  const ouvrirCoord = () => { setCoordMsg(""); setCoord({ tel: res.telephone || "", email: res.email || "", ville: res.ville || "" }); };
+  const ouvrirCoord = () => { setCoordMsg(""); setCoord({ tel: res.telephone || "", email: res.email || "", ville: res.ville || "" }); setTimeout(() => document.getElementById("coordonnees")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
   const enregistrerCoord = async (e) => {
     e.preventDefault();
     setBusy(true); setCoordMsg("");
@@ -157,6 +157,14 @@ export default function PublicSituation() {
               </div>
             </section>
 
+
+            {!res.telephone && !coord && (
+              <section className="sit-annonce" style={{ background: "#eef4ff", borderColor: "#b9d0ff" }}>
+                <b>📱 Ajoute ton numéro WhatsApp</b>
+                <p>Pour que le centre puisse te joindre facilement (rappels, annonces).</p>
+                <button className="small primary" onClick={ouvrirCoord}>Ajouter mon numéro</button>
+              </section>
+            )}
 
             {res.annonces?.length > 0 && (
               <section className="sit-annonces">
@@ -273,7 +281,7 @@ export default function PublicSituation() {
               ))}
             </section>
 
-            <h3 className="sit-h">Mes coordonnées</h3>
+            <h3 className="sit-h" id="coordonnees">Mes coordonnées</h3>
             <section className="sit-card">
               {!coord ? (
                 <>
