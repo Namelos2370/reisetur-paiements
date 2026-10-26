@@ -246,9 +246,28 @@ function Resultats({ etudiant }) {
   );
 }
 
-export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
+export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
   const notify = useToast();
+  const [etudiant, setEtudiant] = useState(initial);
+  const [edit, setEdit] = useState(null); // { nom, telephone, email, ville, classe } pendant la modification
+  const ouvrirEdit = () => setEdit({ nom: etudiant.nom || "", telephone: etudiant.telephone || "", email: etudiant.email || "", ville: etudiant.ville || "", classe: etudiant.classe || "" });
+  const enregistrerEdit = (e) => {
+    e.preventDefault();
+    const nom = edit.nom.trim();
+    if (!nom) return notify("Le nom est obligatoire.", true);
+    const maj = { nom, telephone: edit.telephone.trim() || null, email: edit.email.trim() || null, ville: edit.ville.trim() || null, classe: edit.classe.trim() || null };
+    run(async () => {
+      await q(sb.from("etudiants").update(maj).eq("id", etudiant.id));
+      // la classe du niveau en cours suit la fiche
+      if (maj.classe !== (etudiant.classe || null)) await sb.from("parcours").update({ classe: maj.classe }).eq("etudiant_id", etudiant.id).eq("niveau", etudiant.niveau);
+      setEtudiant({ ...etudiant, ...maj });
+      setEdit(null);
+      notify("Informations enregistrées.");
+      onChanged();
+    });
+  };
   const [passage, setPassage] = useState(false);
+  const [run, busy] = useAction();
   const [code, setCode] = useState(etudiant.code_acces);
 
   const messageAcces = () =>
@@ -263,7 +282,6 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
     if (!window.confirm("Générer un nouveau code ? L'ancien ne fonctionnera plus.")) return;
     run(async () => { setCode(await q(sb.rpc("nouveau_code_acces", { p_etudiant: etudiant.id }))); notify("Nouveau code généré."); });
   };
-  const [run] = useAction();
   const st = useLoad(async () => {
     const [trs, encs, parcours] = await Promise.all([
       q(sb.from("v_tranches").select("*").eq("etudiant_id", etudiant.id).order("frais_id").order("numero")),
@@ -302,6 +320,27 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
       <p className="muted"><b>{etudiant.matricule}</b> · {etudiant.telephone || "Pas de téléphone"}{etudiant.email ? ` · ${etudiant.email}` : ""}{etudiant.ville ? ` · ${etudiant.ville}` : ""}</p>
+      {edit && (
+        <form className="card" onSubmit={enregistrerEdit}>
+          <h3 style={{ marginTop: 0 }}>Modifier les informations</h3>
+          <div className="row">
+            <div><label htmlFor="ed-nom">Nom complet</label><input id="ed-nom" required value={edit.nom} onChange={(e) => setEdit({ ...edit, nom: e.target.value })} /></div>
+            <div><label htmlFor="ed-tel">Téléphone</label><input id="ed-tel" type="tel" inputMode="tel" value={edit.telephone} onChange={(e) => setEdit({ ...edit, telephone: e.target.value })} /></div>
+          </div>
+          <div className="row">
+            <div><label htmlFor="ed-mail">E-mail</label><input id="ed-mail" type="email" value={edit.email} onChange={(e) => setEdit({ ...edit, email: e.target.value })} /></div>
+            <div><label htmlFor="ed-ville">Ville</label><input id="ed-ville" value={edit.ville} onChange={(e) => setEdit({ ...edit, ville: e.target.value })} /></div>
+          </div>
+          <div className="row">
+            <div><label htmlFor="ed-cl">Classe</label><input id="ed-cl" value={edit.classe} onChange={(e) => setEdit({ ...edit, classe: e.target.value })} /></div>
+          </div>
+          <p className="muted" style={{ margin: "8px 0 0" }}>Le matricule ne change jamais. Pour changer de niveau, utilise « Passer au niveau supérieur ».</p>
+          <div className="actions" style={{ marginTop: 12 }}>
+            <button className="primary" disabled={busy}>Enregistrer</button>
+            <button type="button" onClick={() => setEdit(null)}>Annuler</button>
+          </div>
+        </form>
+      )}
       {code && (
         <p className="muted">
           Accès en ligne : matricule <b>{etudiant.matricule}</b> · code <b>{code}</b>{" "}
@@ -310,6 +349,7 @@ export function Detail({ etudiant, onClose, onChanged, onEncaisser }) {
         </p>
       )}
       <div className="actions">
+        {!edit && <button className="small" onClick={ouvrirEdit}>Modifier les informations</button>}
         {onEncaisser && <button className="small primary" onClick={() => { onClose(); onEncaisser(etudiant.id); }}>＋ Encaisser un paiement</button>}
         {etudiant.niveau !== "C1" && <button className="small" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}
       </div>
