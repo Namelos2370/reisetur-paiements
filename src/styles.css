@@ -181,5 +181,5 @@ a.sit-lien { background: #fff; border: 1px solid var(--line); border-radius: 10p
 .sit-main { padding-bottom: 96px; }
 .sit-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(0,0,0,.06); padding-bottom: env(safe-area-inset-bottom); }
 .sit-tabs button { flex: 1; max-width: 104px; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: none; border-radius: 0; padding: 9px 2px 8px; font-size: .74rem; font-weight: 600; color: var(--muted); min-height: 54px; }
-.sit-tabs button span { font-size: 1.25rem; line-height: 1.2; }
+.sit-tabs button svg { display: block; margin-bottom: 2px; }
 .sit-tabs button.on { color: var(--brand); box-shadow: inset 0 3px 0 var(--brand); }

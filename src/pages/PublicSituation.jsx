@@ -13,7 +13,20 @@ const ecrire = (v) => { try { v ? localStorage.setItem(CLE, JSON.stringify(v)) :
 const objet = (type, numero) => (type === "inscription" ? "Inscription" : `Scolarité — tranche ${numero}`);
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
-const ONGLETS = [["accueil", "🏠", "Accueil"], ["paiements", "💳", "Paiements"], ["cours", "📚", "Cours"], ["documents", "📄", "Documents"], ["profil", "👤", "Profil"]];
+// Icônes en traits fins (style « ligne »), colorées par le texte du bouton
+const Ico = ({ d }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {d.map((x, i) => <path key={i} d={x} />)}
+  </svg>
+);
+const ICONES = {
+  accueil: ["M3 10.5 12 3l9 7.5", "M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"],
+  paiements: ["M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M3 10h18", "M7 15h3"],
+  cours: ["M2 6.5 12 3l10 3.5-10 3.5z", "M6 8.5V13c0 1.7 2.7 3 6 3s6-1.3 6-3V8.5", "M22 6.5V12"],
+  documents: ["M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z", "M14 3v5h5", "M9 13h6", "M9 17h6"],
+  profil: ["M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"],
+};
+const ONGLETS = [["accueil", "Accueil"], ["paiements", "Paiements"], ["cours", "Cours"], ["documents", "Documents"], ["profil", "Profil"]];
 
 export default function PublicSituation() {
   const [matricule, setMatricule] = useState("");
@@ -165,7 +178,7 @@ export default function PublicSituation() {
               <>
             {!res.telephone && !coord && (
               <section className="sit-annonce" style={{ background: "#eef4ff", borderColor: "#b9d0ff" }}>
-                <b>📱 Ajoute ton numéro WhatsApp</b>
+                <b>Ajoute ton numéro WhatsApp</b>
                 <p>Pour que le centre puisse te joindre facilement (rappels, annonces).</p>
                 <button className="small primary" onClick={ouvrirCoord}>Ajouter mon numéro</button>
               </section>
@@ -175,8 +188,8 @@ export default function PublicSituation() {
               <section className="sit-annonces">
                 {res.annonces.map((a, i) => (
                   <div className="sit-annonce" key={i}>
-                    {a.date_evenement && <span className="sit-evt">📅 {fdate(a.date_evenement)}</span>}
-                    <b>📢 {a.titre}</b>
+                    {a.date_evenement && <span className="sit-evt">{fdate(a.date_evenement)}</span>}
+                    <b>{a.titre}</b>
                     {a.message && <p>{a.message}</p>}
                     {a.classe && <small>{a.classe}</small>}
                   </div>
@@ -345,7 +358,7 @@ export default function PublicSituation() {
               )}
             </section>
 
-            {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">💬 Écrire à la direction sur WhatsApp</a>}
+            {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">Écrire à la direction sur WhatsApp</a>}
 
             <button className="block" onClick={() => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); }}>Quitter</button>
 
@@ -353,8 +366,8 @@ export default function PublicSituation() {
             )}
 
             <nav className="sit-tabs" aria-label="Navigation">
-              {ONGLETS.map(([k, ico, label]) => (
-                <button key={k} className={onglet === k ? "on" : ""} onClick={() => aller(k)} aria-current={onglet === k ? "page" : undefined}><span aria-hidden="true">{ico}</span>{label}</button>
+              {ONGLETS.map(([k, label]) => (
+                <button key={k} className={onglet === k ? "on" : ""} onClick={() => aller(k)} aria-current={onglet === k ? "page" : undefined}><Ico d={ICONES[k]} />{label}</button>
               ))}
             </nav>
           </>
