@@ -149,12 +149,25 @@ function NouveauxFrais({ etudiantId, niveau, onCreated }) {
     e.preventDefault();
     run(async () => {
       if (f.d2 < f.d1) return notify("La tranche 2 doit être après la tranche 1.", true);
+      // Les frais de même nature déjà définis pour ce niveau sont remplacés par les nouveaux
+      let anciens = await q(sb.from("v_frais").select("id, montant_total").eq("etudiant_id", etudiantId).eq("type", f.type).eq("niveau", niveau || ""));
+      if (anciens.length) {
+        const trs = await q(sb.from("tranches").select("id, frais_id").in("frais_id", anciens.map((x) => x.id)));
+        const avecPaiement = trs.length ? await q(sb.from("encaissements").select("tranche_id").in("tranche_id", trs.map((t) => t.id)).limit(1)) : [];
+        if (avecPaiement.length) return notify("Des paiements existent déjà sur ces frais : ils ne peuvent pas être remplacés sans perdre les reçus. Utilise « Modifier » sur les tranches pour changer le montant ou l'échéance.", true);
+        const liste = anciens.map((x) => fcfa(x.montant_total)).join(", ");
+        if (!window.confirm(`Les frais ${f.type === "inscription" ? "d'inscription" : "de scolarité"} actuels (${liste}) seront supprimés et remplacés par les nouveaux. Continuer ?`)) return;
+      }
       await q(sb.rpc("creer_frais", {
         p_etudiant: etudiantId, p_type: f.type,
         p_t1: +f.m1, p_d1: f.d1, p_t2: +f.m2, p_d2: f.d2,
       }));
+      if (anciens.length) {
+        await q(sb.from("tranches").delete().in("frais_id", anciens.map((x) => x.id)));
+        await q(sb.from("frais").delete().in("id", anciens.map((x) => x.id)));
+      }
       setF({ type: "inscription", m1: "", d1: "", m2: "", d2: "" });
-      notify("Frais créés.");
+      notify(anciens.length ? "Frais remplacés." : "Frais créés.");
       onCreated();
     });
   };
@@ -429,6 +442,7 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
           )}
 
           <h3>Définir de nouveaux frais (2 tranches)</h3>
+          <p className="muted" style={{ marginTop: 0 }}>Si des frais de même nature existent déjà pour ce niveau et qu'aucun paiement n'y est rattaché, ils sont remplacés par les nouveaux.</p>
           <NouveauxFrais etudiantId={etudiant.id} niveau={etudiant.niveau} onCreated={refresh} />
 
           <h3>Encaissements</h3>
