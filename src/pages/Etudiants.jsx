@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80 } from "../utils.js";
+import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80, MODULES_EXAMEN, modulesARepasser, fpts } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu, waLink, waNumber } from "../data.js";
@@ -187,15 +187,18 @@ function Resultats({ etudiant }) {
   const notify = useToast();
   const [run, busy] = useAction();
   const st = useLoad(() => q(sb.from("resultats").select("*").eq("etudiant_id", etudiant.id).order("niveau")), [etudiant.id]);
-  const [f, setF] = useState({ niveau: etudiant.niveau, date_examen: "", note: "", mention: "", statut: "reussi" });
+  const vide = { niveau: etudiant.niveau, date_examen: "", note: "", mention: "", statut: "reussi", pts: {} };
+  const [f, setF] = useState(vide);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const save = (e) => {
     e.preventDefault();
+    const saisis = MODULES_EXAMEN.filter(([n]) => f.pts[n] !== undefined && f.pts[n] !== "");
+    const modules = saisis.length ? saisis.map(([m, max]) => ({ m, pts: +f.pts[m], max })) : null;
+    const total = f.note === "" && saisis.length === MODULES_EXAMEN.length ? modules.reduce((a, x) => a + x.pts, 0) : f.note === "" ? null : +f.note;
     run(async () => {
-      await q(sb.from("resultats").upsert({
-        etudiant_id: etudiant.id, niveau: f.niveau, date_examen: f.date_examen || null,
-        note: f.note === "" ? null : +f.note, mention: f.mention.trim(), statut: f.statut,
-      }, { onConflict: "etudiant_id,niveau" }));
+      const ligne = { etudiant_id: etudiant.id, niveau: f.niveau, date_examen: f.date_examen || null, note: total, mention: f.mention.trim(), statut: f.statut };
+      await avecColonne("modules", (avec) => q(sb.from("resultats").upsert(avec ? { ...ligne, modules } : ligne, { onConflict: "etudiant_id,niveau" })));
+      setF(vide);
       notify(`Résultat ${f.niveau} enregistré.`);
       st.reload();
     });
@@ -218,9 +221,9 @@ function Resultats({ etudiant }) {
                   <td><b>{r.niveau}</b></td>
                   <td>{r.date_examen ? fdate(r.date_examen) : "—"}</td>
                   <td>{r.note != null ? noteSur80(r.note) : "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
-                  <td><Badge def={STATUT_RES[r.statut]} /></td>
+                  <td><Badge def={STATUT_RES[r.statut]} />{modulesARepasser(r.modules).length > 0 && <><br /><span className="muted">À repasser : {modulesARepasser(r.modules).map((m) => m.m).join(", ")}</span></>}</td>
                   <td className="actions">
-                    <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut })}>Modifier</button>
+                    <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut, pts: Object.fromEntries((r.modules || []).map((m) => [m.m, m.pts])) })}>Modifier</button>
                     <button className="small danger" onClick={() => del(r)}>Supprimer</button>
                   </td>
                 </tr>
@@ -237,6 +240,12 @@ function Resultats({ etudiant }) {
         <div className="row">
           <div><label htmlFor="rs-d">Date de l'examen</label><input id="rs-d" type="date" value={f.date_examen} onChange={set("date_examen")} /></div>
           <div><label htmlFor="rs-no">Total des points, sur 80 <span className="muted">(facultatif)</span></label><input id="rs-no" type="number" step="0.01" min="0" value={f.note} onChange={set("note")} /></div>
+        </div>
+        <p className="muted" style={{ margin: "12px 0 4px" }}>Points par module <span className="muted">(facultatif — un module sous 50 % est à repasser et l'étudiant en est informé dans son espace)</span></p>
+        <div className="row">
+          {MODULES_EXAMEN.map(([n, max]) => (
+            <div key={n}><label htmlFor={"rs-" + n}>{n} <span className="muted">/ {max}</span></label><input id={"rs-" + n} type="number" step="0.5" min="0" max={max} value={f.pts[n] ?? ""} onChange={(e) => setF((x) => ({ ...x, pts: { ...x.pts, [n]: e.target.value } }))} /></div>
+          ))}
         </div>
         <label htmlFor="rs-m">Mention / commentaire <span className="muted">(facultatif)</span></label>
         <input id="rs-m" value={f.mention} onChange={set("mention")} />

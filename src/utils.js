@@ -98,3 +98,9 @@ export const refHint = (m) => (m === "banque" ? "N° inscrit sur le bordereau" :
 
 // Note d'examen : total sur 80 points, virgule décimale (61.5 → « 61,5/80 »)
 export const noteSur80 = (n) => `${String(+n).replace(".", ",")}/80`;
+
+// Modules de l'examen final (points maximum). Un module est validé dès 50 % des points.
+export const MODULES_EXAMEN = [["Lesen", 15], ["Hören", 15], ["Schreiben", 20], ["Sprechen", 30]];
+export const moduleValide = (m) => m.max > 0 && m.pts / m.max >= 0.5;
+export const modulesARepasser = (modules) => (Array.isArray(modules) ? modules : []).filter((m) => !moduleValide(m));
+export const fpts = (n) => String(+n).replace(".", ",");

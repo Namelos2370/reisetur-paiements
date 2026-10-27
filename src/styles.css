@@ -183,3 +183,12 @@ a.sit-lien { background: #fff; border: 1px solid var(--line); border-radius: 10p
 .sit-tabs button { flex: 1; max-width: 104px; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: none; border-radius: 0; padding: 9px 2px 8px; font-size: .74rem; font-weight: 600; color: var(--muted); min-height: 54px; }
 .sit-tabs button svg { display: block; margin-bottom: 2px; }
 .sit-tabs button.on { color: var(--brand); box-shadow: inset 0 3px 0 var(--brand); }
+.sit-repasser { background: #fdeeee; border-color: #f0b8b8; }
+.sit-repasser button { margin-top: 4px; }
+.sit-mod { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.sit-mod div { background: var(--bg); border-radius: 10px; padding: 8px 10px; border-left: 4px solid var(--ok); }
+.sit-mod div.ko { border-left-color: var(--bad); background: #fdeeee; }
+.sit-mod span { display: block; color: var(--muted); font-size: .8rem; }
+.sit-mod b { font-size: .95rem; }
+.sit-mod i { display: block; font-style: normal; font-size: .78rem; font-weight: 700; color: var(--ok); }
+.sit-mod .ko i { color: var(--bad); }

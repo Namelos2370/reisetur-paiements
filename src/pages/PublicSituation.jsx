@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
-import { fcfa, fdate, modeLabel, noteSur80 } from "../utils.js";
+import { fcfa, fdate, modeLabel, noteSur80, moduleValide, modulesARepasser, fpts } from "../utils.js";
 import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
@@ -125,6 +125,7 @@ export default function PublicSituation() {
     p: (res.parcours || []).find((x) => x.niveau === n),
     r: (res.resultats || []).find((x) => x.niveau === n),
   }));
+  const aRepasser = (res?.resultats || []).map((r) => ({ niveau: r.niveau, statut: r.statut, modules: modulesARepasser(r.modules) })).filter((x) => x.modules.length);
   const reussis = (res?.resultats || []).filter((r) => r.statut === "reussi");
 
   const tranches = (res?.tranches || []).filter((t) => t.montant_du > 0);
@@ -183,6 +184,14 @@ export default function PublicSituation() {
                 <button className="small primary" onClick={ouvrirCoord}>Ajouter mon numéro</button>
               </section>
             )}
+
+            {aRepasser.map((x) => (
+              <section className="sit-annonce sit-repasser" key={x.niveau}>
+                <b>Examen {x.niveau} : {x.modules.length > 1 ? "modules" : "module"} à repasser</b>
+                <p>{x.modules.map((m) => `${m.m} (${fpts(m.pts)}/${m.max})`).join(", ")}. {x.statut === "reussi" ? "Ton niveau est validé, mais ces modules doivent être repassés." : "Ces modules doivent être repassés pour valider ton niveau."} Rapproche-toi du centre pour connaître la date de la prochaine session.</p>
+                <button className="small" onClick={() => aller("cours")}>Voir mes résultats</button>
+              </section>
+            ))}
 
             {res.annonces?.length > 0 && (
               <section className="sit-annonces">
@@ -291,6 +300,13 @@ export default function PublicSituation() {
                         <span>{p?.classe || ""}{p?.debut ? ` · depuis le ${fdate(p.debut)}` : ""}</span>
                         {r && (r.note != null || r.mention) && <span>{r.note != null ? `Note ${noteSur80(r.note)}` : ""}{r.note != null && r.mention ? " · " : ""}{r.mention || ""}</span>}
                       </div>
+                      {r?.modules?.length > 0 && (
+                        <div className="sit-mod">
+                          {r.modules.map((m) => (
+                            <div key={m.m} className={moduleValide(m) ? "ok" : "ko"}><span>{m.m}</span><b>{fpts(m.pts)}/{m.max}</b><i>{moduleValide(m) ? "Validé" : "À repasser"}</i></div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </section>
