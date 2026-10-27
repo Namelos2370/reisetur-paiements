@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
-import { fcfa, fdate, modeLabel } from "../utils.js";
+import { fcfa, fdate, modeLabel, noteSur80 } from "../utils.js";
 import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
@@ -289,7 +289,7 @@ export default function PublicSituation() {
                       </div>
                       <div className="sit-row-bot" style={{ marginTop: 6 }}>
                         <span>{p?.classe || ""}{p?.debut ? ` · depuis le ${fdate(p.debut)}` : ""}</span>
-                        {r && (r.note != null || r.mention) && <span>{r.note != null ? `Note ${r.note}` : ""}{r.note != null && r.mention ? " · " : ""}{r.mention || ""}</span>}
+                        {r && (r.note != null || r.mention) && <span>{r.note != null ? `Note ${noteSur80(r.note)}` : ""}{r.note != null && r.mention ? " · " : ""}{r.mention || ""}</span>}
                       </div>
                     </div>
                   ))}

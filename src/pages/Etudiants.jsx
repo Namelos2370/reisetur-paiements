@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today } from "../utils.js";
+import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80 } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu, waLink, waNumber } from "../data.js";
@@ -217,7 +217,7 @@ function Resultats({ etudiant }) {
                 <tr key={r.id}>
                   <td><b>{r.niveau}</b></td>
                   <td>{r.date_examen ? fdate(r.date_examen) : "—"}</td>
-                  <td>{r.note ?? "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
+                  <td>{r.note != null ? noteSur80(r.note) : "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
                   <td><Badge def={STATUT_RES[r.statut]} /></td>
                   <td className="actions">
                     <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut })}>Modifier</button>
@@ -236,7 +236,7 @@ function Resultats({ etudiant }) {
         </div>
         <div className="row">
           <div><label htmlFor="rs-d">Date de l'examen</label><input id="rs-d" type="date" value={f.date_examen} onChange={set("date_examen")} /></div>
-          <div><label htmlFor="rs-no">Note <span className="muted">(facultatif)</span></label><input id="rs-no" type="number" step="0.01" min="0" value={f.note} onChange={set("note")} /></div>
+          <div><label htmlFor="rs-no">Total des points, sur 80 <span className="muted">(facultatif)</span></label><input id="rs-no" type="number" step="0.01" min="0" value={f.note} onChange={set("note")} /></div>
         </div>
         <label htmlFor="rs-m">Mention / commentaire <span className="muted">(facultatif)</span></label>
         <input id="rs-m" value={f.mention} onChange={set("mention")} />

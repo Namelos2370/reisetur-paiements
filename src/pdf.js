@@ -1,5 +1,5 @@
 import { ECOLE } from "./config.js";
-import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel } from "./utils.js";
+import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel, noteSur80 } from "./utils.js";
 
 // jsPDF ne sait pas afficher les espaces insécables des nombres français : on les remplace.
 const nf = new Intl.NumberFormat("fr-FR");
@@ -250,7 +250,7 @@ export async function attestationNiveauPdf(a) {
     ["Niveau validé", `Langue allemande - niveau ${a.niveau}`],
     ...(a.classe ? [["Classe", a.classe]] : []),
     ...(a.date_examen ? [["Date de l'examen", dlong(a.date_examen)]] : []),
-    ...(a.note != null && a.note !== "" ? [["Note", String(a.note)]] : []),
+    ...(a.note != null && a.note !== "" ? [["Note", noteSur80(a.note)]] : []),
     ...(a.mention ? [["Mention", a.mention]] : []),
   ];
   let y = 104;

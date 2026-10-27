@@ -95,3 +95,6 @@ export const modeLabel = (m) => (MODES.find(([k]) => k === m) || [null, "Non pr�
 export const refLabel = (m) =>
   m === "banque" ? "Référence du bordereau bancaire" : m === "orange_money" || m === "mtn_momo" ? "ID de la transaction (SMS de confirmation)" : "Référence (facultatif)";
 export const refHint = (m) => (m === "banque" ? "N° inscrit sur le bordereau" : m === "orange_money" || m === "mtn_momo" ? "ex. MP2610241234.AB12" : "");
+
+// Note d'examen : total sur 80 points, virgule décimale (61.5 → « 61,5/80 »)
+export const noteSur80 = (n) => `${String(+n).replace(".", ",")}/80`;
