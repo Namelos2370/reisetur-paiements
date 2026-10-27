@@ -319,6 +319,21 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
 
   const refresh = () => { st.reload(); onChanged(); };
 
+  // Suppression d'un frais (ses deux tranches), possible seulement sans aucun paiement rattaché
+  const supprimerFrais = (t) => {
+    const libelle = `${TYPE[t.type]} ${t.niveau || ""}`.trim();
+    run(async () => {
+      const trs = await q(sb.from("tranches").select("id").eq("frais_id", t.frais_id));
+      const paiements = trs.length ? await q(sb.from("encaissements").select("id").in("tranche_id", trs.map((x) => x.id)).limit(1)) : [];
+      if (paiements.length) return notify("Impossible : des paiements existent sur ces frais (les reçus doivent être conservés). Utilise « Modifier » pour changer le montant ou l'échéance.", true);
+      if (!window.confirm(`Supprimer les frais « ${libelle} » (les 2 tranches) de ${etudiant.nom} ? Cette action est définitive.`)) return;
+      await q(sb.from("tranches").delete().eq("frais_id", t.frais_id));
+      await q(sb.from("frais").delete().eq("id", t.frais_id));
+      notify("Frais supprimés.");
+      refresh();
+    });
+  };
+
   // Modification d'une tranche (montant dû, échéance)
   const [tr, setTr] = useState(null); // { id, frais_id, label, montant, date, min }
   const ouvrirTr = (t) => setTr({ id: t.id, frais_id: t.frais_id, label: `${TYPE[t.type]} T${t.numero}`, montant: String(t.montant_du), date: t.date_limite, min: (t.paye || 0) + (t.a_valider || 0) });
@@ -418,7 +433,7 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
                       <td>{fcfa(t.montant_du)}</td>
                       <td>{fcfa(t.paye)}</td>
                       <td><Badge def={STAT[t.statut]} /></td>
-                      <td><button className="small" onClick={() => ouvrirTr(t)}>Modifier</button></td>
+                      <td className="actions"><button className="small" onClick={() => ouvrirTr(t)}>Modifier</button><button className="small danger" disabled={busy} onClick={() => supprimerFrais(t)}>Supprimer</button></td>
                     </tr>
                   ))}
                 </tbody>
