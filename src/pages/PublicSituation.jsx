@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
-import { fcfa, fdate, modeLabel, noteSur80, moduleValide, modulesARepasser, fpts } from "../utils.js";
+import { fcfa, fdate, modeLabel, noteSur80, moduleValide, modulesARepasser, fpts, attestationPossible } from "../utils.js";
 import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
@@ -103,6 +103,16 @@ export default function PublicSituation() {
     setPdfBusy("");
   };
 
+  const releve = async (r) => {
+    setPdfBusy("rel" + r.niveau);
+    try {
+      const { releveNotesPdf } = await import("../pdf.js");
+      const info = r.releve || {};
+      await releveNotesPdf({ nom: info.nom || res.nom, naissance: info.naissance, rang: info.rang, epreuve: info.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules });
+    } catch { setErr("Le relevé n'a pas pu être généré. Réessaie dans un instant."); }
+    setPdfBusy("");
+  };
+
   const [onglet, setOnglet] = useState("accueil");
   const deconnecter = () => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); setCoord(null); window.scrollTo({ top: 0 }); };
   const aller = (k) => { setOnglet(k); window.scrollTo({ top: 0 }); };
@@ -127,7 +137,8 @@ export default function PublicSituation() {
     r: (res.resultats || []).find((x) => x.niveau === n),
   }));
   const aRepasser = (res?.resultats || []).map((r) => ({ niveau: r.niveau, statut: r.statut, modules: modulesARepasser(r.modules) })).filter((x) => x.modules.length);
-  const reussis = (res?.resultats || []).filter((r) => r.statut === "reussi");
+  const avecModules = (res?.resultats || []).filter((r) => r.modules?.length);
+  const attestations = (res?.resultats || []).filter((r) => r.statut === "reussi");
 
   const tranches = (res?.tranches || []).filter((t) => t.montant_du > 0);
 
@@ -333,12 +344,22 @@ export default function PublicSituation() {
                 <div><b>Attestation d'inscription</b><div className="muted">{inscrite ? "Disponible" : "Disponible dès que l'inscription est réglée"}</div></div>
                 <button className="small" disabled={!inscrite || pdfBusy === "attestation"} onClick={attestation}>{pdfBusy === "attestation" ? "…" : "Télécharger"}</button>
               </div>
-              {reussis.map((r) => (
-                <div className="sit-row recu" key={r.niveau}>
-                  <div><b>Attestation de niveau {r.niveau}</b><div className="muted">Niveau validé{r.date_examen ? ` · examen du ${fdate(r.date_examen)}` : ""}</div></div>
-                  <button className="small" disabled={pdfBusy === "niv" + r.niveau} onClick={() => attestationNiveau(r)}>{pdfBusy === "niv" + r.niveau ? "…" : "Télécharger"}</button>
+              {avecModules.map((r) => (
+                <div className="sit-row recu" key={"rel" + r.niveau}>
+                  <div><b>Relevé de notes {r.niveau}</b><div className="muted">Résultats de l'épreuve finale{r.date_examen ? ` · ${fdate(r.date_examen)}` : ""}</div></div>
+                  <button className="small" disabled={pdfBusy === "rel" + r.niveau} onClick={() => releve(r)}>{pdfBusy === "rel" + r.niveau ? "…" : "Télécharger"}</button>
                 </div>
               ))}
+              {attestations.map((r) => {
+                const ok = attestationPossible(r);
+                const restants = modulesARepasser(r.modules);
+                return (
+                  <div className="sit-row recu" key={r.niveau}>
+                    <div><b>Attestation de niveau {r.niveau}</b><div className="muted">{ok ? `Niveau validé${r.date_examen ? ` · examen du ${fdate(r.date_examen)}` : ""}` : `Disponible quand tous les modules seront validés (à repasser : ${restants.map((m) => m.m).join(", ")})`}</div></div>
+                    <button className="small" disabled={!ok || pdfBusy === "niv" + r.niveau} onClick={() => attestationNiveau(r)}>{pdfBusy === "niv" + r.niveau ? "…" : "Télécharger"}</button>
+                  </div>
+                );
+              })}
               {(res.documents || []).map((d, i) => (
                 <div className="sit-row recu" key={i}>
                   <div><b>{d.titre}</b><div className="muted">Support de cours</div></div>

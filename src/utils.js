@@ -104,3 +104,6 @@ export const MODULES_EXAMEN = [["Lesen", 15], ["Hören", 15], ["Schreiben", 20],
 export const moduleValide = (m) => m.max > 0 && m.pts / m.max >= 0.5;
 export const modulesARepasser = (modules) => (Array.isArray(modules) ? modules : []).filter((m) => !moduleValide(m));
 export const fpts = (n) => String(+n).replace(".", ",");
+
+// L'attestation de niveau n'est délivrée que si le niveau est réussi ET que tous les modules sont validés.
+export const attestationPossible = (r) => r.statut === "reussi" && modulesARepasser(r.modules).length === 0;

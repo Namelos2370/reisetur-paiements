@@ -210,7 +210,7 @@ function Resultats({ etudiant }) {
   return (
     <>
       <h3>Résultats d'examen</h3>
-      <p className="muted">Visibles par l'étudiant dans « Mon profil ». Un résultat « Réussi » lui donne accès à son attestation de niveau.</p>
+      <p className="muted">Visibles par l'étudiant dans « Mon profil ». Le relevé de notes est téléchargeable dès que les points par module sont saisis ; l'attestation de niveau seulement si le résultat est « Réussi » et que tous les modules sont validés.</p>
       {st.data?.length > 0 && (
         <div className="tablewrap">
           <table>
@@ -224,6 +224,7 @@ function Resultats({ etudiant }) {
                   <td><Badge def={STATUT_RES[r.statut]} />{modulesARepasser(r.modules).length > 0 && <><br /><span className="muted">À repasser : {modulesARepasser(r.modules).map((m) => m.m).join(", ")}</span></>}</td>
                   <td className="actions">
                     <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut, pts: Object.fromEntries((r.modules || []).map((m) => [m.m, m.pts])) })}>Modifier</button>
+                    {r.modules?.length > 0 && <button className="small" disabled={busy} onClick={() => run(async () => { const { releveNotesPdf } = await import("../pdf.js"); const i = r.releve || {}; await releveNotesPdf({ nom: i.nom || etudiant.nom, naissance: i.naissance, rang: i.rang, epreuve: i.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules }); })}>Relevé PDF</button>}
                     <button className="small danger" onClick={() => del(r)}>Supprimer</button>
                   </td>
                 </tr>

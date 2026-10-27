@@ -1,5 +1,5 @@
 import { ECOLE } from "./config.js";
-import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel, noteSur80 } from "./utils.js";
+import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel, noteSur80, fpts, moduleValide } from "./utils.js";
 
 // jsPDF ne sait pas afficher les espaces insécables des nombres français : on les remplace.
 const nf = new Intl.NumberFormat("fr-FR");
@@ -396,4 +396,106 @@ export async function notesPdf(items, titre = "") {
       ? `Note_echeance_${slug(items[0].nom)}.pdf`
       : `Notes_echeance_${titre ? slug(titre) + "_" : ""}${items.length}_etudiants.pdf`
   );
+}
+
+// ---- Relevé de résultats de l'épreuve finale (une page A4, mise en page du relevé remis aux candidats) ----
+const NOIR = [42, 42, 42], VERT = [39, 174, 96], ROUGE = [192, 57, 43];
+export async function releveNotesPdf(a) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const logo = await loadLogo();
+  const L = 20, R = 190, W = R - L;
+  const reussi = a.statut === "reussi";
+  const modules = a.modules || [];
+  const total = a.note != null && a.note !== "" ? Number(a.note) : modules.reduce((s, m) => s + m.pts, 0);
+  const max = modules.reduce((s, m) => s + m.max, 0) || 80;
+  const pct = (p, m) => ((p / m) * 100).toFixed(1) + "%";
+  const jmy = a.date_examen ? a.date_examen.split("-").reverse().join(".") : "";
+  const epreuve = a.epreuve || "";
+  // « Hören » est écrit « Horen » sur les relevés remis aux candidats
+  const nomModule = (m) => String(m).replace("ö", "o");
+
+  // bandeau
+  doc.setFillColor(...NOIR); doc.rect(L, 17.2, W, 25.7, "F");
+  doc.setFillColor(255, 255, 255); doc.rect(L + 3.4, 19.8, 20.3, 20.3, "F");
+  if (logo) { const r = Math.min(18.5 / logo.w, 18.5 / logo.h); const w = logo.w * r, h = logo.h * r; doc.addImage(logo.data, logo.fmt, L + 3.4 + (20.3 - w) / 2, 19.8 + (20.3 - h) / 2, w, h); }
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+  doc.text("REISETÜR 237 LANGUAGE CENTER", 47.7, 29);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(205, 205, 205);
+  doc.text("Yaoundé, Cameroun • reisetur237@gmail.com • +237 620 107 489 • +237 699 164 497", 47.7, 35.4);
+
+  // titre
+  doc.setTextColor(20, 20, 20); doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+  doc.text(`ABSCHLUSSPRÜFUNG DEUTSCH ${a.niveau}`, 105, 57.5, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(85, 85, 85);
+  doc.text(`${epreuve ? epreuve + " • " : ""}Résultats de l'épreuve finale`, 105, 65.5, { align: "center" });
+
+  // candidat
+  doc.setFillColor(250, 250, 250); doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3);
+  doc.roundedRect(L, 73.7, W, 35.6, 2, 2, "FD");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(130, 130, 130);
+  doc.text("KANDIDAT/IN", L + 6, 80);
+  doc.setFontSize(16); doc.setTextColor(10, 10, 10);
+  doc.text(a.nom, L + 6, 88.8);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(85, 85, 85);
+  if (a.naissance) doc.text(`Né(e) le ${a.naissance}`, L + 6, 96.7);
+  doc.setTextColor(135, 135, 135);
+  doc.text([a.rang ? `Rang : ${a.rang}` : "", jmy ? `Date de l'épreuve : ${jmy}` : ""].filter(Boolean).join(" | "), L + 6, 102.2);
+
+  // tableau
+  const X = [20, 59.8, 94.9, 125.1, 149.9, 190];
+  const cx = (i) => (X[i] + X[i + 1]) / 2;
+  let y = 115.5;
+  doc.setFillColor(...NOIR); doc.rect(L, y, W, 12.7, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(255, 255, 255);
+  doc.text("Module", X[0] + 4, y + 7.8);
+  ["Points obtenus", "Maximum", "%", "Résultat"].forEach((t, i) => doc.text(t, cx(i + 1), y + 7.8, { align: "center" }));
+  y += 12.7;
+  const rowH = 13.9;
+  modules.forEach((m, i) => {
+    doc.setFillColor(...(i % 2 ? [244, 244, 244] : [255, 255, 255])); doc.rect(L, y, W, rowH, "F");
+    doc.setDrawColor(221, 221, 221); doc.setLineWidth(0.25); doc.rect(L, y, W, rowH);
+    X.slice(1, -1).forEach((x) => doc.line(x, y, x, y + rowH));
+    const ok = moduleValide(m), by = y + rowH / 2 + 1.4;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(10, 10, 10);
+    doc.text(nomModule(m.m), X[0] + 4, by);
+    doc.setFontSize(12.5); doc.text(fpts(m.pts), cx(1), by + 0.4, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(150, 150, 150);
+    doc.text(String(m.max), cx(2), by, { align: "center" });
+    doc.setTextColor(20, 20, 20); doc.text(pct(m.pts, m.max), cx(3), by, { align: "center" });
+    doc.setFont("helvetica", "bold"); doc.setTextColor(...(ok ? VERT : ROUGE));
+    doc.text(ok ? "Validé" : "Insuffisant", cx(4), by, { align: "center" });
+    y += rowH;
+  });
+  // ligne TOTAL
+  doc.setFillColor(...NOIR); doc.rect(L, y, W, 14.7, "F");
+  doc.setDrawColor(10, 10, 10); doc.setLineWidth(0.5); doc.line(L, y, R, y);
+  doc.setDrawColor(90, 90, 90); doc.setLineWidth(0.25); X.slice(1, -1).forEach((x) => doc.line(x, y, x, y + 14.7));
+  const ty = y + 14.7 / 2 + 1.6;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(255, 255, 255);
+  doc.text("TOTAL", X[0] + 4, ty);
+  doc.setFontSize(12.5); doc.text(fpts(total), cx(1), ty + 0.4, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(160, 160, 160); doc.text(String(max), cx(2), ty, { align: "center" });
+  doc.setTextColor(255, 255, 255); doc.text(pct(total, max), cx(3), ty, { align: "center" });
+  doc.setFont("helvetica", "bold"); doc.setTextColor(...(reussi ? [46, 204, 113] : [231, 76, 60]));
+  doc.text(reussi ? "VALIDE" : "ECHOUE", cx(4), ty, { align: "center" });
+
+  // encadré résultat
+  const by0 = 205.5;
+  doc.setFillColor(...(reussi ? [236, 253, 243] : [253, 237, 236])); doc.setDrawColor(...(reussi ? VERT : ROUGE)); doc.setLineWidth(0.6);
+  doc.rect(L, by0, W, 24, "FD");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...(reussi ? VERT : ROUGE));
+  doc.text(reussi ? `REUSSI - Niveau ${a.niveau} valide` : `ECHOUE - Niveau ${a.niveau} non valide`, 105, by0 + 9.4, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+  doc.text(`Score total : ${fpts(total)}/${max} (${pct(total, max)}) | Mention : ${a.mention || ""}`, 105, by0 + 16.6, { align: "center" });
+
+  // signature + pied de page
+  doc.setFontSize(8.5); doc.setTextColor(140, 140, 140);
+  doc.text("Signature & Cachet du Directeur du Centre", 105, 245.6, { align: "center" });
+  doc.setDrawColor(190, 190, 190); doc.setLineWidth(0.3); doc.line(65, 254.4, 145, 254.4);
+  doc.setDrawColor(220, 220, 220); doc.line(22.3, 265.4, 187.7, 265.4);
+  doc.setFontSize(7.5); doc.setTextColor(170, 170, 170);
+  doc.text(`REISETÜR 237 Language Center | Abschlussprüfung Deutsch ${a.niveau}${epreuve ? " | " + epreuve : ""}${jmy ? " | " + jmy : ""}`, 105, 269.2, { align: "center" });
+
+  doc.save(`Releve_${slug(a.niveau)}_${slug(a.nom)}.pdf`);
 }
