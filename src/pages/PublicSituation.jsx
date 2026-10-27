@@ -6,7 +6,7 @@ import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
 // Page publique « Mon profil » (/situation ou /profil) — matricule + code d'accès personnel.
-// Option « rester connecté » : les accès sont mémorisés sur l'appareil de l'étudiant (effacés par « Quitter »).
+// Option « rester connecté » : les accès sont mémorisés sur l'appareil de l'étudiant (effacés par « Se déconnecter »).
 const CLE = "reisetur_acces";
 const lire = () => { try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch { return null; } };
 const ecrire = (v) => { try { v ? localStorage.setItem(CLE, JSON.stringify(v)) : localStorage.removeItem(CLE); } catch { /* sans stockage */ } };
@@ -104,6 +104,7 @@ export default function PublicSituation() {
   };
 
   const [onglet, setOnglet] = useState("accueil");
+  const deconnecter = () => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); setCoord(null); window.scrollTo({ top: 0 }); };
   const aller = (k) => { setOnglet(k); window.scrollTo({ top: 0 }); };
   const [coord, setCoord] = useState(null); // { tel, email, ville } en cours de saisie
   const [coordMsg, setCoordMsg] = useState("");
@@ -147,6 +148,12 @@ export default function PublicSituation() {
           <h1>{nomCentre}</h1>
           <p>{res ? "Mon profil" : "Espace étudiant"}</p>
         </div>
+        {res && (
+          <button className="sit-out" onClick={deconnecter} aria-label="Se déconnecter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></svg>
+            <span>Quitter</span>
+          </button>
+        )}
       </header>
 
       <main className="sit-main">
@@ -376,7 +383,7 @@ export default function PublicSituation() {
 
             {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">Écrire à la direction sur WhatsApp</a>}
 
-            <button className="block" onClick={() => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); }}>Quitter</button>
+            <button className="block" onClick={deconnecter}>Se déconnecter</button>
 
               </>
             )}
