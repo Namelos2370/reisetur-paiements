@@ -26,6 +26,9 @@ const ICONES = {
   documents: ["M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z", "M14 3v5h5", "M9 13h6", "M9 17h6"],
   profil: ["M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"],
 };
+// « NNTOUBA EBOUELLE RACHEL » → « Nntouba Ebouelle Rachel »
+const prenomNom = (n) => String(n || "").toLocaleLowerCase("fr").replace(/(^|[\s'-])(\p{L})/gu, (m, sep, c) => sep + c.toLocaleUpperCase("fr"));
+
 const ONGLETS = [["accueil", "Accueil"], ["paiements", "Paiements"], ["cours", "Cours"], ["documents", "Documents"], ["profil", "Profil"]];
 
 export default function PublicSituation() {
@@ -113,6 +116,7 @@ export default function PublicSituation() {
     setPdfBusy("");
   };
 
+  useEffect(() => { document.title = "Espace étudiant · REISETÜR 237"; }, []);
   const [onglet, setOnglet] = useState("accueil");
   const deconnecter = () => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); setCoord(null); window.scrollTo({ top: 0 }); };
   const aller = (k) => { setOnglet(k); window.scrollTo({ top: 0 }); };
@@ -185,7 +189,8 @@ export default function PublicSituation() {
         {res && (
           <>
             <section className="sit-card sit-id">
-              <div className="sit-nom">{res.nom}</div>
+              <div className="sit-hello">Bonjour,</div>
+              <div className="sit-nom">{prenomNom(res.nom)}</div>
               <div className="sit-chips">
                 <span>{res.matricule}</span>
                 {res.classe && <span>{res.classe}</span>}

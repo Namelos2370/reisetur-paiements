@@ -196,3 +196,4 @@ a.sit-lien { background: #fff; border: 1px solid var(--line); border-radius: 10p
 .sit-out { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 10px; padding: 7px 10px; font-size: .82rem; font-weight: 600; }
 .sit-out:hover { background: rgba(255,255,255,.24); }
 @media (max-width: 420px) { .sit-out span { display: none; } .sit-out { padding: 9px; } }
+.sit-hello { color: var(--muted); font-size: .95rem; margin-bottom: 2px; }
