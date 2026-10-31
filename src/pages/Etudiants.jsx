@@ -319,6 +319,27 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
 
   const refresh = () => { st.reload(); onChanged(); };
 
+  // Suppression d'un étudiant : possible seulement si aucun encaissement (même annulé) n'est rattaché à ses frais
+  const supprimerEtudiant = () => {
+    run(async () => {
+      const frais = await q(sb.from("frais").select("id").eq("etudiant_id", etudiant.id));
+      const ids = frais.map((x) => x.id);
+      const trs = ids.length ? await q(sb.from("tranches").select("id").in("frais_id", ids)) : [];
+      const paiements = trs.length ? await q(sb.from("encaissements").select("id").in("tranche_id", trs.map((x) => x.id)).limit(1)) : [];
+      if (paiements.length) return notify("Suppression impossible : cet étudiant a des paiements enregistrés (les reçus doivent être conservés).", true);
+      if (!window.confirm(`Supprimer définitivement ${etudiant.nom} (${etudiant.matricule}) avec ses frais, son parcours et ses résultats ? Cette action est irréversible.`)) return;
+      if (ids.length) {
+        await q(sb.from("tranches").delete().in("frais_id", ids));
+        await q(sb.from("frais").delete().in("id", ids));
+      }
+      await q(sb.from("parcours").delete().eq("etudiant_id", etudiant.id));
+      await q(sb.from("etudiants").delete().eq("id", etudiant.id));
+      notify("Étudiant supprimé.");
+      onChanged();
+      onClose();
+    });
+  };
+
   // Suppression d'un frais (ses deux tranches), possible seulement sans aucun paiement rattaché
   const supprimerFrais = (t) => {
     const libelle = `${TYPE[t.type]} ${t.niveau || ""}`.trim();
@@ -489,6 +510,10 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
           </div>
         </>
       )}
+      <div style={{ marginTop: 24, paddingTop: 14, borderTop: "1px solid var(--line)" }}>
+        <button className="small danger" disabled={busy} onClick={supprimerEtudiant}>Supprimer cet étudiant</button>
+        <span className="muted" style={{ marginLeft: 10 }}>Possible seulement s'il n'a aucun paiement enregistré.</span>
+      </div>
       {passage && <PasserNiveau etudiant={etudiant} onClose={() => setPassage(false)} onDone={() => { setPassage(false); onChanged(); onClose(); }} />}
     </Modal>
   );
