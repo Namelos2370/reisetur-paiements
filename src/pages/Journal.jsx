@@ -26,7 +26,7 @@ const LABEL = {
   numero_recu: "n° de reçu", reference_banque: "référence", mode_paiement: "mode de paiement", date_paiement: "date du versement", motif: "motif",
   scolarite_t1: "tranche 1", scolarite_t2: "tranche 2", sous_titre: "sous-titre", adresse: "adresse", contact: "contact", whatsapp: "WhatsApp",
   instructions_paiement: "« Comment payer »", direction: "signature", directeur: "signataire", horaires: "horaires", salle: "salle",
-  debut: "début", fin: "fin", examen: "examen", formateur: "formateur", titre: "titre", message: "message", actif: "affichage",
+  resultats_bloques: "résultats bloqués", debut: "début", fin: "fin", examen: "examen", formateur: "formateur", titre: "titre", message: "message", actif: "affichage",
 };
 const STATUT = { en_attente: "à valider", valide: "validé", rejete: "rejeté/annulé" };
 

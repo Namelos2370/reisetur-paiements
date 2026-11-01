@@ -281,6 +281,16 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
   const notify = useToast();
   const [etudiant, setEtudiant] = useState(initial);
   const [edit, setEdit] = useState(null); // { nom, telephone, email, ville, classe } pendant la modification
+  const basculerBlocage = () => {
+    const bloquer = !etudiant.resultats_bloques;
+    if (bloquer && !window.confirm(`Bloquer les résultats et notes de ${etudiant.nom} dans son espace ? Il verra « Bloqué : non-paiement de frais dû ».`)) return;
+    run(async () => {
+      await q(sb.from("etudiants").update({ resultats_bloques: bloquer }).eq("id", etudiant.id));
+      setEtudiant({ ...etudiant, resultats_bloques: bloquer });
+      notify(bloquer ? "Résultats bloqués." : "Résultats débloqués.");
+      onChanged();
+    });
+  };
   const ouvrirEdit = () => setEdit({ nom: etudiant.nom || "", telephone: etudiant.telephone || "", email: etudiant.email || "", ville: etudiant.ville || "", classe: etudiant.classe || "" });
   const enregistrerEdit = (e) => {
     e.preventDefault();
@@ -403,7 +413,7 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
   return (
     <Modal onClose={onClose}>
       <div className="between">
-        <h2>{etudiant.nom} <Badge>{etudiant.niveau}</Badge>{etudiant.classe && <> <Badge>{etudiant.classe}</Badge></>}</h2>
+        <h2>{etudiant.nom} <Badge>{etudiant.niveau}</Badge>{etudiant.resultats_bloques && <> <Badge def={["Résultats bloqués", "bad"]} /></>}{etudiant.classe && <> <Badge>{etudiant.classe}</Badge></>}</h2>
         <button className="small" onClick={onClose}>Fermer</button>
       </div>
       <p className="muted"><b>{etudiant.matricule}</b> · {etudiant.telephone || "Pas de téléphone"}{etudiant.email ? ` · ${etudiant.email}` : ""}{etudiant.ville ? ` · ${etudiant.ville}` : ""}</p>
@@ -437,6 +447,7 @@ export function Detail({ etudiant: initial, onClose, onChanged, onEncaisser }) {
       )}
       <div className="actions">
         {!edit && <button className="small" onClick={ouvrirEdit}>Modifier les informations</button>}
+        <button className={"small" + (etudiant.resultats_bloques ? " primary" : "")} disabled={busy} onClick={basculerBlocage}>{etudiant.resultats_bloques ? "Débloquer les résultats" : "Bloquer les résultats (frais dus)"}</button>
         {onEncaisser && <button className="small primary" onClick={() => { onClose(); onEncaisser(etudiant.id); }}>＋ Encaisser un paiement</button>}
         {etudiant.niveau !== "C1" && <button className="small" onClick={() => setPassage(true)}>Passer au niveau supérieur</button>}
       </div>

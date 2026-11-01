@@ -140,7 +140,8 @@ export default function PublicSituation() {
     p: (res.parcours || []).find((x) => x.niveau === n),
     r: (res.resultats || []).find((x) => x.niveau === n),
   }));
-  const aRepasser = (res?.resultats || []).map((r) => ({ niveau: r.niveau, statut: r.statut, modules: modulesARepasser(r.modules) })).filter((x) => x.modules.length);
+  const bloque = !!res?.resultats_bloques;
+  const aRepasser = (res?.resultats || []).map((r) => ({ niveau: r.niveau, statut: r.statut, modules: modulesARepasser(r.modules) })).filter((x) => x.modules.length && !bloque);
   const avecModules = (res?.resultats || []).filter((r) => r.modules?.length);
   const attestations = (res?.resultats || []).filter((r) => r.statut === "reussi");
 
@@ -205,6 +206,14 @@ export default function PublicSituation() {
                 <b>Ajoute ton numéro WhatsApp</b>
                 <p>Pour que le centre puisse te joindre facilement (rappels, annonces).</p>
                 <button className="small primary" onClick={ouvrirCoord}>Ajouter mon numéro</button>
+              </section>
+            )}
+
+            {bloque && (
+              <section className="sit-annonce sit-repasser">
+                <b>Résultats bloqués</b>
+                <p>Tes résultats et tes notes sont bloqués pour cause de non-paiement de frais dû. Rapproche-toi du centre pour régulariser ta situation : ils te seront accessibles dès le paiement enregistré.</p>
+                <button className="small" onClick={() => aller("paiements")}>Voir mes frais</button>
               </section>
             )}
 
@@ -317,7 +326,7 @@ export default function PublicSituation() {
                     <div className="sit-row" key={niveau}>
                       <div className="sit-row-top">
                         <b>Niveau {niveau}{niveau === res.niveau ? " · en cours" : ""}</b>
-                        {r ? <Badge def={r.statut === "reussi" ? ["Réussi", "ok"] : r.statut === "echec" ? ["Non validé", "bad"] : ["Résultat à venir", "neutral"]} /> : niveau !== res.niveau ? <Badge def={["Terminé", "neutral"]} /> : null}
+                        {r ? <Badge def={r.statut === "bloque" ? ["Bloqué", "bad"] : r.statut === "reussi" ? ["Réussi", "ok"] : r.statut === "echec" ? ["Non validé", "bad"] : ["Résultat à venir", "neutral"]} /> : niveau !== res.niveau ? <Badge def={["Terminé", "neutral"]} /> : null}
                       </div>
                       <div className="sit-row-bot" style={{ marginTop: 6 }}>
                         <span>{p?.classe || ""}{p?.debut ? ` · depuis le ${fdate(p.debut)}` : ""}</span>
@@ -349,6 +358,12 @@ export default function PublicSituation() {
                 <div><b>Attestation d'inscription</b><div className="muted">{inscrite ? "Disponible" : "Disponible dès que l'inscription est réglée"}</div></div>
                 <button className="small" disabled={!inscrite || pdfBusy === "attestation"} onClick={attestation}>{pdfBusy === "attestation" ? "…" : "Télécharger"}</button>
               </div>
+              {bloque && (
+                <div className="sit-row recu">
+                  <div><b>Relevé de notes et attestations</b><div className="muted">Bloqués pour cause de non-paiement de frais dû</div></div>
+                  <button className="small" disabled>Bloqué</button>
+                </div>
+              )}
               {avecModules.map((r) => (
                 <div className="sit-row recu" key={"rel" + r.niveau}>
                   <div><b>Relevé de notes {r.niveau}</b><div className="muted">Résultats de l'épreuve finale{r.date_examen ? ` · ${fdate(r.date_examen)}` : ""}</div></div>
