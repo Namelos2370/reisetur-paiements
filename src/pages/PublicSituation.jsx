@@ -111,7 +111,7 @@ export default function PublicSituation() {
     try {
       const { releveNotesPdf } = await import("../pdf.js");
       const info = r.releve || {};
-      await releveNotesPdf({ nom: info.nom || res.nom, naissance: info.naissance, rang: info.rang, epreuve: info.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules });
+      await releveNotesPdf({ nom: info.nom || res.nom, naissance: info.naissance, rang: info.rang, rattrapage: info.rattrapage, epreuve: info.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules });
     } catch { setErr("Le relevé n'a pas pu être généré. Réessaie dans un instant."); }
     setPdfBusy("");
   };

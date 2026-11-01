@@ -418,7 +418,8 @@ export async function releveNotesPdf(a) {
   const jmy = a.date_examen ? a.date_examen.split("-").reverse().join(".") : "";
   const epreuve = a.epreuve || "";
   // « Hören » est écrit « Horen » sur les relevés remis aux candidats
-  const nomModule = (m) => String(m).replace("ö", "o");
+  const nomModule = (m) => String(m);
+  const jr = a.rattrapage || ""; // date du rattrapage (relevé définitif)
 
   // bandeau
   doc.setFillColor(...NOIR); doc.rect(L, 17.2, W, 25.7, "F");
@@ -445,7 +446,7 @@ export async function releveNotesPdf(a) {
   doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(85, 85, 85);
   if (a.naissance) doc.text(`Né(e) le ${a.naissance}`, L + 6, 96.7);
   doc.setTextColor(135, 135, 135);
-  doc.text([a.rang ? `Rang : ${a.rang}` : "", jmy ? `Date de l'épreuve : ${jmy}` : ""].filter(Boolean).join(" | "), L + 6, 102.2);
+  doc.text([a.rang ? `Rang : ${a.rang}` : "", jmy ? `Date de l'épreuve : ${jmy}` : "", jr ? `Rattrapage : ${jr}` : ""].filter(Boolean).join(" | "), L + 6, 102.2);
 
   // tableau
   const X = [20, 59.8, 94.9, 125.1, 149.9, 190];
@@ -483,14 +484,14 @@ export async function releveNotesPdf(a) {
   doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(160, 160, 160); doc.text(String(max), cx(2), ty, { align: "center" });
   doc.setTextColor(255, 255, 255); doc.text(pct(total, max), cx(3), ty, { align: "center" });
   doc.setFont("helvetica", "bold"); doc.setTextColor(...(reussiInitial ? [46, 204, 113] : [231, 76, 60]));
-  doc.text(reussiInitial ? "VALIDE" : "ECHOUE", cx(4), ty, { align: "center" });
+  doc.text(reussiInitial ? "VALIDÉ" : "ECHOUÉ", cx(4), ty, { align: "center" });
 
   // encadré résultat
   const by0 = 205.5;
   doc.setFillColor(...(reussi ? [236, 253, 243] : [253, 237, 236])); doc.setDrawColor(...(reussi ? VERT : ROUGE)); doc.setLineWidth(0.6);
   doc.rect(L, by0, W, 24, "FD");
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...(reussi ? VERT : ROUGE));
-  doc.text(reussi ? `REUSSI${ratts.length ? " APRES RATTRAPAGE" : ""} - Niveau ${a.niveau} valide` : `ECHOUE - Niveau ${a.niveau} non valide`, 105, by0 + 9.4, { align: "center" });
+  doc.text(reussi ? `REUSSI${ratts.length ? " APRES RATTRAPAGE" : ""} — Niveau ${a.niveau} validé` : `ECHOUÉ — Niveau ${a.niveau} non validé`, 105, by0 + 9.4, { align: "center" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
   doc.text(`Score total : ${fpts(final)}/${max} (${pct(final, max)}) | Mention : ${a.mention || ""}`, 105, by0 + 16.6, { align: "center" });
   if (ratts.length) {
@@ -504,7 +505,7 @@ export async function releveNotesPdf(a) {
   doc.setDrawColor(190, 190, 190); doc.setLineWidth(0.3); doc.line(65, 254.4, 145, 254.4);
   doc.setDrawColor(220, 220, 220); doc.line(22.3, 265.4, 187.7, 265.4);
   doc.setFontSize(7.5); doc.setTextColor(170, 170, 170);
-  doc.text(`REISETÜR 237 Language Center | Abschlussprüfung Deutsch ${a.niveau}${epreuve ? " | " + epreuve : ""}${jmy ? " | " + jmy : ""}`, 105, 269.2, { align: "center" });
+  doc.text(`REISETÜR 237 Language Center | Abschlussprüfung Deutsch ${a.niveau}${epreuve ? " | " + epreuve : ""}${jr || jmy ? " | " + (jr || jmy) : ""}`, 105, 269.2, { align: "center" });
 
   doc.save(`Releve_${slug(a.niveau)}_${slug(a.nom)}.pdf`);
 }

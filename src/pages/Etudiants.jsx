@@ -250,7 +250,7 @@ function Resultats({ etudiant }) {
                   <td><Badge def={STATUT_RES[r.statut]} />{modulesARepasser(r.modules).length > 0 && <><br /><span className="muted">À repasser : {modulesARepasser(r.modules).map((m) => m.m).join(", ")}</span></>}</td>
                   <td className="actions">
                     <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut, pts: Object.fromEntries((r.modules || []).map((m) => [m.m, m.pts])), ratt: Object.fromEntries((r.modules || []).filter((m) => m.ratt).map((m) => [m.m, m.ratt.pts])) })}>Modifier</button>
-                    {r.modules?.length > 0 && <button className="small" disabled={busy} onClick={() => run(async () => { const { releveNotesPdf } = await import("../pdf.js"); const i = r.releve || {}; await releveNotesPdf({ nom: i.nom || etudiant.nom, naissance: i.naissance, rang: i.rang, epreuve: i.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules }); })}>Relevé PDF</button>}
+                    {r.modules?.length > 0 && <button className="small" disabled={busy} onClick={() => run(async () => { const { releveNotesPdf } = await import("../pdf.js"); const i = r.releve || {}; await releveNotesPdf({ nom: i.nom || etudiant.nom, naissance: i.naissance, rang: i.rang, rattrapage: i.rattrapage, epreuve: i.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules }); })}>Relevé PDF</button>}
                     <button className="small danger" onClick={() => del(r)}>Supprimer</button>
                   </td>
                 </tr>
