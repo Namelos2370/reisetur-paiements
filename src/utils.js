@@ -101,9 +101,21 @@ export const noteSur80 = (n) => `${String(+n).replace(".", ",")}/80`;
 
 // Modules de l'examen final (points maximum). Un module est validé dès 50 % des points.
 export const MODULES_EXAMEN = [["Lesen", 15], ["Hören", 15], ["Schreiben", 20], ["Sprechen", 30]];
-export const moduleValide = (m) => m.max > 0 && m.pts / m.max >= 0.5;
+// Rattrapage : un module repassé garde son score initial et reçoit { ratt: { pts, max } } (barème propre au rattrapage).
+export const RATT_MAX = { Lesen: 12, "Hören": 12, Sprechen: 15 };
+export const noteModule = (m) => (m.ratt ? { pts: m.ratt.pts, max: m.ratt.max } : { pts: m.pts, max: m.max });
+export const moduleValide = (m) => { const n = noteModule(m); return n.max > 0 && n.pts / n.max >= 0.5; };
 export const modulesARepasser = (modules) => (Array.isArray(modules) ? modules : []).filter((m) => !moduleValide(m));
 export const fpts = (n) => String(+n).replace(".", ",");
 
 // L'attestation de niveau n'est délivrée que si le niveau est réussi ET que tous les modules sont validés.
 export const attestationPossible = (r) => r.statut === "reussi" && modulesARepasser(r.modules).length === 0;
+
+// Bilan d'un examen : un module repassé compte au prorata du barème initial (7/12 sur un module de 15 points = 8,75).
+export const pointsEffectifs = (m) => (m.ratt ? (m.ratt.pts * m.max) / m.ratt.max : m.pts);
+export function bilanModules(modules) {
+  const total = Math.round(modules.reduce((s, m) => s + pointsEffectifs(m), 0) * 100) / 100;
+  const max = modules.reduce((s, m) => s + m.max, 0);
+  const pct = max ? (total / max) * 100 : 0;
+  return { total, max, pct, statut: pct >= 60 ? "reussi" : "echec", mention: pct >= 75 ? "Gut" : pct >= 60 ? "Befriedigend" : "Ungenügend" };
+}

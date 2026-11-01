@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80, MODULES_EXAMEN, modulesARepasser, fpts } from "../utils.js";
+import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80, MODULES_EXAMEN, modulesARepasser, fpts, RATT_MAX, bilanModules, noteModule } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu, waLink, waNumber } from "../data.js";
@@ -200,16 +200,18 @@ function Resultats({ etudiant }) {
   const notify = useToast();
   const [run, busy] = useAction();
   const st = useLoad(() => q(sb.from("resultats").select("*").eq("etudiant_id", etudiant.id).order("niveau")), [etudiant.id]);
-  const vide = { niveau: etudiant.niveau, date_examen: "", note: "", mention: "", statut: "reussi", pts: {} };
+  const vide = { niveau: etudiant.niveau, date_examen: "", note: "", mention: "", statut: "reussi", pts: {}, ratt: {} };
   const [f, setF] = useState(vide);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const save = (e) => {
     e.preventDefault();
     const saisis = MODULES_EXAMEN.filter(([n]) => f.pts[n] !== undefined && f.pts[n] !== "");
-    const modules = saisis.length ? saisis.map(([m, max]) => ({ m, pts: +f.pts[m], max })) : null;
-    const total = f.note === "" && saisis.length === MODULES_EXAMEN.length ? modules.reduce((a, x) => a + x.pts, 0) : f.note === "" ? null : +f.note;
+    const modules = saisis.length ? saisis.map(([m, max]) => ({ m, pts: +f.pts[m], max, ...(f.ratt[m] !== undefined && f.ratt[m] !== "" && RATT_MAX[m] ? { ratt: { pts: +f.ratt[m], max: RATT_MAX[m] } } : {}) })) : null;
+    const avecRatt = !!modules?.some((x) => x.ratt);
+    const bilan = avecRatt ? bilanModules(modules) : null; // rattrapage : total, résultat et mention recalculés
+    const total = bilan ? bilan.total : f.note === "" && saisis.length === MODULES_EXAMEN.length ? modules.reduce((a, x) => a + x.pts, 0) : f.note === "" ? null : +f.note;
     run(async () => {
-      const ligne = { etudiant_id: etudiant.id, niveau: f.niveau, date_examen: f.date_examen || null, note: total, mention: f.mention.trim(), statut: f.statut };
+      const ligne = { etudiant_id: etudiant.id, niveau: f.niveau, date_examen: f.date_examen || null, note: total, mention: bilan ? bilan.mention : f.mention.trim(), statut: bilan ? bilan.statut : f.statut };
       await avecColonne("modules", (avec) => q(sb.from("resultats").upsert(avec ? { ...ligne, modules } : ligne, { onConflict: "etudiant_id,niveau" })));
       setF(vide);
       notify(`Résultat ${f.niveau} enregistré.`);
@@ -236,7 +238,7 @@ function Resultats({ etudiant }) {
                   <td>{r.note != null ? noteSur80(r.note) : "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
                   <td><Badge def={STATUT_RES[r.statut]} />{modulesARepasser(r.modules).length > 0 && <><br /><span className="muted">À repasser : {modulesARepasser(r.modules).map((m) => m.m).join(", ")}</span></>}</td>
                   <td className="actions">
-                    <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut, pts: Object.fromEntries((r.modules || []).map((m) => [m.m, m.pts])) })}>Modifier</button>
+                    <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut, pts: Object.fromEntries((r.modules || []).map((m) => [m.m, m.pts])), ratt: Object.fromEntries((r.modules || []).filter((m) => m.ratt).map((m) => [m.m, m.ratt.pts])) })}>Modifier</button>
                     {r.modules?.length > 0 && <button className="small" disabled={busy} onClick={() => run(async () => { const { releveNotesPdf } = await import("../pdf.js"); const i = r.releve || {}; await releveNotesPdf({ nom: i.nom || etudiant.nom, naissance: i.naissance, rang: i.rang, epreuve: i.epreuve, niveau: r.niveau, date_examen: r.date_examen, note: r.note, mention: r.mention, statut: r.statut, modules: r.modules }); })}>Relevé PDF</button>}
                     <button className="small danger" onClick={() => del(r)}>Supprimer</button>
                   </td>
@@ -259,6 +261,12 @@ function Resultats({ etudiant }) {
         <div className="row">
           {MODULES_EXAMEN.map(([n, max]) => (
             <div key={n}><label htmlFor={"rs-" + n}>{n} <span className="muted">/ {max}</span></label><input id={"rs-" + n} type="number" step="0.5" min="0" max={max} value={f.pts[n] ?? ""} onChange={(e) => setF((x) => ({ ...x, pts: { ...x.pts, [n]: e.target.value } }))} /></div>
+          ))}
+        </div>
+        <p className="muted" style={{ margin: "12px 0 4px" }}>Rattrapage <span className="muted">(points du module repassé : il remplace l'ancien score au prorata ; total, résultat et mention sont recalculés)</span></p>
+        <div className="row">
+          {MODULES_EXAMEN.filter(([n]) => RATT_MAX[n]).map(([n]) => (
+            <div key={n}><label htmlFor={"rt-" + n}>{n} <span className="muted">/ {RATT_MAX[n]}</span></label><input id={"rt-" + n} type="number" step="0.5" min="0" max={RATT_MAX[n]} value={f.ratt[n] ?? ""} onChange={(e) => setF((x) => ({ ...x, ratt: { ...x.ratt, [n]: e.target.value } }))} /></div>
           ))}
         </div>
         <label htmlFor="rs-m">Mention / commentaire <span className="muted">(facultatif)</span></label>

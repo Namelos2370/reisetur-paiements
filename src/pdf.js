@@ -1,5 +1,5 @@
 import { ECOLE } from "./config.js";
-import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel, noteSur80, fpts, moduleValide } from "./utils.js";
+import { modeLabel, TYPE, dansJours, isoLocal, libelleRappel, lignesRappel, noteSur80, fpts, moduleValide, noteModule } from "./utils.js";
 
 // jsPDF ne sait pas afficher les espaces insécables des nombres français : on les remplace.
 const nf = new Intl.NumberFormat("fr-FR");
@@ -407,8 +407,12 @@ export async function releveNotesPdf(a) {
   const L = 20, R = 190, W = R - L;
   const reussi = a.statut === "reussi";
   const modules = a.modules || [];
-  const total = a.note != null && a.note !== "" ? Number(a.note) : modules.reduce((s, m) => s + m.pts, 0);
+  const ratts = modules.filter((m) => m.ratt);
+  const initial = modules.reduce((s, m) => s + m.pts, 0);
+  const total = ratts.length ? initial : a.note != null && a.note !== "" ? Number(a.note) : initial; // tableau = examen initial
+  const final = a.note != null && a.note !== "" ? Number(a.note) : total;
   const max = modules.reduce((s, m) => s + m.max, 0) || 80;
+  const reussiInitial = ratts.length ? total / max >= 0.6 : reussi; // le tableau reste celui de l'examen initial
   const pct = (p, m) => ((p / m) * 100).toFixed(1) + "%";
   const jmy = a.date_examen ? a.date_examen.split("-").reverse().join(".") : "";
   const epreuve = a.epreuve || "";
@@ -456,7 +460,7 @@ export async function releveNotesPdf(a) {
     doc.setFillColor(...(i % 2 ? [244, 244, 244] : [255, 255, 255])); doc.rect(L, y, W, rowH, "F");
     doc.setDrawColor(221, 221, 221); doc.setLineWidth(0.25); doc.rect(L, y, W, rowH);
     X.slice(1, -1).forEach((x) => doc.line(x, y, x, y + rowH));
-    const ok = moduleValide(m), by = y + rowH / 2 + 1.4;
+    const ok = !m.ratt ? moduleValide(m) : m.pts / m.max >= 0.5, by = y + rowH / 2 + 1.4; // le tableau reste celui de l'examen initial
     doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(10, 10, 10);
     doc.text(nomModule(m.m), X[0] + 4, by);
     doc.setFontSize(12.5); doc.text(fpts(m.pts), cx(1), by + 0.4, { align: "center" });
@@ -477,17 +481,21 @@ export async function releveNotesPdf(a) {
   doc.setFontSize(12.5); doc.text(fpts(total), cx(1), ty + 0.4, { align: "center" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(160, 160, 160); doc.text(String(max), cx(2), ty, { align: "center" });
   doc.setTextColor(255, 255, 255); doc.text(pct(total, max), cx(3), ty, { align: "center" });
-  doc.setFont("helvetica", "bold"); doc.setTextColor(...(reussi ? [46, 204, 113] : [231, 76, 60]));
-  doc.text(reussi ? "VALIDE" : "ECHOUE", cx(4), ty, { align: "center" });
+  doc.setFont("helvetica", "bold"); doc.setTextColor(...(reussiInitial ? [46, 204, 113] : [231, 76, 60]));
+  doc.text(reussiInitial ? "VALIDE" : "ECHOUE", cx(4), ty, { align: "center" });
 
   // encadré résultat
   const by0 = 205.5;
   doc.setFillColor(...(reussi ? [236, 253, 243] : [253, 237, 236])); doc.setDrawColor(...(reussi ? VERT : ROUGE)); doc.setLineWidth(0.6);
   doc.rect(L, by0, W, 24, "FD");
   doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...(reussi ? VERT : ROUGE));
-  doc.text(reussi ? `REUSSI - Niveau ${a.niveau} valide` : `ECHOUE - Niveau ${a.niveau} non valide`, 105, by0 + 9.4, { align: "center" });
+  doc.text(reussi ? `REUSSI${ratts.length ? " APRES RATTRAPAGE" : ""} - Niveau ${a.niveau} valide` : `ECHOUE - Niveau ${a.niveau} non valide`, 105, by0 + 9.4, { align: "center" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-  doc.text(`Score total : ${fpts(total)}/${max} (${pct(total, max)}) | Mention : ${a.mention || ""}`, 105, by0 + 16.6, { align: "center" });
+  doc.text(`Score total : ${fpts(final)}/${max} (${pct(final, max)}) | Mention : ${a.mention || ""}`, 105, by0 + 16.6, { align: "center" });
+  if (ratts.length) {
+    doc.setFontSize(8); doc.setTextColor(110, 110, 110);
+    doc.text(`Rattrapage : ${ratts.map((m) => `${nomModule(m.m)} ${fpts(m.ratt.pts)}/${m.ratt.max}`).join("  •  ")}  (barème initial ramené au prorata)`, 105, by0 + 29, { align: "center" });
+  }
 
   // signature + pied de page
   doc.setFontSize(8.5); doc.setTextColor(140, 140, 140);

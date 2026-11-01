@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
-import { fcfa, fdate, modeLabel, noteSur80, moduleValide, modulesARepasser, fpts, attestationPossible } from "../utils.js";
+import { fcfa, fdate, modeLabel, noteSur80, moduleValide, modulesARepasser, fpts, attestationPossible, noteModule } from "../utils.js";
 import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
@@ -211,7 +211,7 @@ export default function PublicSituation() {
             {aRepasser.map((x) => (
               <section className="sit-annonce sit-repasser" key={x.niveau}>
                 <b>Examen {x.niveau} : {x.modules.length > 1 ? "modules" : "module"} à repasser</b>
-                <p>{x.modules.map((m) => `${m.m} (${fpts(m.pts)}/${m.max})`).join(", ")}. {x.statut === "reussi" ? "Ton niveau est validé, mais ces modules doivent être repassés." : "Ces modules doivent être repassés pour valider ton niveau."} Rapproche-toi du centre pour connaître la date de la prochaine session.</p>
+                <p>{x.modules.map((m) => `${m.m} (${fpts(noteModule(m).pts)}/${noteModule(m).max})`).join(", ")}. {x.statut === "reussi" ? "Ton niveau est validé, mais ces modules doivent être repassés." : "Ces modules doivent être repassés pour valider ton niveau."} Rapproche-toi du centre pour connaître la date de la prochaine session.</p>
                 <button className="small" onClick={() => aller("cours")}>Voir mes résultats</button>
               </section>
             ))}
@@ -326,7 +326,7 @@ export default function PublicSituation() {
                       {r?.modules?.length > 0 && (
                         <div className="sit-mod">
                           {r.modules.map((m) => (
-                            <div key={m.m} className={moduleValide(m) ? "ok" : "ko"}><span>{m.m}</span><b>{fpts(m.pts)}/{m.max}</b><i>{moduleValide(m) ? "Validé" : "À repasser"}</i></div>
+                            <div key={m.m} className={moduleValide(m) ? "ok" : "ko"}><span>{m.m}{m.ratt ? " · rattrapage" : ""}</span><b>{fpts(noteModule(m).pts)}/{noteModule(m).max}</b><i>{moduleValide(m) ? "Validé" : "À repasser"}</i>{m.ratt && <small>Examen initial : {fpts(m.pts)}/{m.max}</small>}</div>
                           ))}
                         </div>
                       )}

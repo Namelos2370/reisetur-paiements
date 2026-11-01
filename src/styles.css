@@ -197,3 +197,4 @@ a.sit-lien { background: #fff; border: 1px solid var(--line); border-radius: 10p
 .sit-out:hover { background: rgba(255,255,255,.24); }
 @media (max-width: 420px) { .sit-out span { display: none; } .sit-out { padding: 9px; } }
 .sit-hello { color: var(--muted); font-size: .95rem; margin-bottom: 2px; }
+.sit-mod small { display: block; color: var(--muted); font-size: .74rem; margin-top: 2px; }
