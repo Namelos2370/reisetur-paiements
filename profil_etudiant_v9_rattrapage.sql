@@ -3,6 +3,7 @@
 -- Total recalculé au prorata du barème initial ; niveau validé à 60 % du total ; mention : Gut >= 75 %, Befriedigend >= 60 %.
 update resultats r set note = v.note, mention = v.mention, statut = v.statut, modules = v.modules::jsonb
 from (values
+  ('M237-26-002', 68.25, 'Gut', 'reussi', '[{"m": "Lesen", "pts": 11, "max": 15}, {"m": "Hören", "pts": 7, "max": 15, "ratt": {"pts": 11, "max": 12}}, {"m": "Schreiben", "pts": 18, "max": 20}, {"m": "Sprechen", "pts": 25.5, "max": 30}]'),
   ('M237-26-008', 51.75, 'Befriedigend', 'reussi', '[{"m": "Lesen", "pts": 9, "max": 15}, {"m": "Hören", "pts": 5, "max": 15, "ratt": {"pts": 7, "max": 12}}, {"m": "Schreiben", "pts": 17, "max": 20}, {"m": "Sprechen", "pts": 17, "max": 30}]'),
   ('M237-26-005', 53.0, 'Befriedigend', 'reussi', '[{"m": "Lesen", "pts": 5, "max": 15, "ratt": {"pts": 10, "max": 12}}, {"m": "Hören", "pts": 6, "max": 15, "ratt": {"pts": 6, "max": 12}}, {"m": "Schreiben", "pts": 15, "max": 20}, {"m": "Sprechen", "pts": 18, "max": 30}]'),
   ('M237-26-007', 59.25, 'Befriedigend', 'reussi', '[{"m": "Lesen", "pts": 6, "max": 15, "ratt": {"pts": 10, "max": 12}}, {"m": "Hören", "pts": 6, "max": 15, "ratt": {"pts": 11, "max": 12}}, {"m": "Schreiben", "pts": 15, "max": 20}, {"m": "Sprechen", "pts": 18, "max": 30}]'),
