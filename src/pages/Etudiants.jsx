@@ -32,16 +32,6 @@ function PasserNiveau({ etudiant, onClose, onDone }) {
   const submit = (e) => {
     e.preventDefault();
     run(async () => {
-      if (f.type === "rattrapage") {
-        // frais de rattrapage : un seul versement, ne remplace pas les frais existants
-        const m = +f.m1;
-        if (!(m > 0)) return notify("Indique le montant des frais de rattrapage.", true);
-        const fr = await q(sb.from("frais").insert({ etudiant_id: etudiantId, type: "rattrapage", montant_total: m }).select("id"));
-        await q(sb.from("tranches").insert({ frais_id: fr[0].id, numero: 1, montant_du: m, date_limite: f.d1 }));
-        setF({ type: "inscription", m1: "", d1: "", m2: "", d2: "" });
-        notify("Frais de rattrapage créés.");
-        return onCreated();
-      }
       if (f.d2 < f.d1) return notify("La tranche 2 doit être après la tranche 1.", true);
       await q(sb.rpc("passer_niveau", {
         p_etudiant: etudiant.id, p_niveau: niveau, p_classe: classe, p_date: date,

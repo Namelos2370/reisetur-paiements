@@ -74,7 +74,8 @@ export default function Dashboard({ onValider, onGo }) {
     const x = (parClasse[k] ||= { attendu: 0, paye: 0, solde: 0 });
     x.attendu += f.montant_total; x.paye += f.paye; x.solde += Math.max(0, f.solde - f.a_valider);
   });
-  const classes = Object.entries(parClasse).sort((a, b) => a[0].localeCompare(b[0]));
+  // Une classe terminée (plus aucun étudiant dedans, plus rien à payer) n'est plus affichée
+  const classes = Object.entries(parClasse).filter(([c, x]) => nbParClasse[c] || x.solde > 0).sort((a, b) => a[0].localeCompare(b[0]));
 
   // Derniers encaissements
   const parTranche = Object.fromEntries(trs.map((t) => [t.id, t]));
