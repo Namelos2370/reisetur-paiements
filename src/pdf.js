@@ -13,7 +13,8 @@ const slug = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/
 
 const BLEU = [11, 61, 145];
 const objet = (type, numero) =>
-  type === "inscription" ? "Frais d'inscription" : `Frais de scolarité - tranche ${numero}`;
+  type === "inscription" ? "Frais d'inscription" : type === "rattrapage" ? "Frais de rattrapage" : `Frais de scolarité - tranche ${numero}`;
+const nomFrais = (type) => (type === "inscription" ? "frais d'inscription" : type === "rattrapage" ? "frais de rattrapage" : "frais de scolarité");
 
 // ---- Logo facultatif (public/logo.png) ----
 let logoCache;
@@ -148,8 +149,8 @@ export async function recuPdf(r) {
   const reste = Number(r.reste);
   doc.text(
     reste > 0
-      ? `Reste à payer sur les ${r.type === "inscription" ? "frais d'inscription" : "frais de scolarité"} : ${money(reste)}`
-      : `${r.type === "inscription" ? "Frais d'inscription" : "Frais de scolarité"} entièrement soldés.`,
+      ? `Reste à payer sur les ${nomFrais(r.type)} : ${money(reste)}`
+      : `${nomFrais(r.type).charAt(0).toUpperCase() + nomFrais(r.type).slice(1)} entièrement soldés.`,
     25, y
   );
 

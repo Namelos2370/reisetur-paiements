@@ -16,7 +16,7 @@ export const fdatetime = (d) => new Date(d).toLocaleString("fr-FR", { dateStyle:
 
 export const today = () => new Date().toISOString().slice(0, 10);
 
-export const TYPE = { inscription: "Inscription", scolarite: "Scolarité" };
+export const TYPE = { inscription: "Inscription", scolarite: "Scolarité", rattrapage: "Rattrapage" };
 
 export const STAT = {
   payee: ["Payée", "ok"],
@@ -82,7 +82,7 @@ export function lignesRappel(lignes) {
 }
 
 export const libelleRappel = (l) =>
-  (l.type === "inscription" ? "Frais d'inscription" : "Frais de scolarité") + (l.partiel ? " (solde)" : "");
+  (l.type === "inscription" ? "Frais d'inscription" : l.type === "rattrapage" ? "Frais de rattrapage" : "Frais de scolarité") + (l.partiel ? " (solde)" : "");
 
 // ---- Modes de paiement ----
 export const MODES = [

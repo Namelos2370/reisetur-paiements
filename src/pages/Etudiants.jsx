@@ -32,6 +32,16 @@ function PasserNiveau({ etudiant, onClose, onDone }) {
   const submit = (e) => {
     e.preventDefault();
     run(async () => {
+      if (f.type === "rattrapage") {
+        // frais de rattrapage : un seul versement, ne remplace pas les frais existants
+        const m = +f.m1;
+        if (!(m > 0)) return notify("Indique le montant des frais de rattrapage.", true);
+        const fr = await q(sb.from("frais").insert({ etudiant_id: etudiantId, type: "rattrapage", montant_total: m }).select("id"));
+        await q(sb.from("tranches").insert({ frais_id: fr[0].id, numero: 1, montant_du: m, date_limite: f.d1 }));
+        setF({ type: "inscription", m1: "", d1: "", m2: "", d2: "" });
+        notify("Frais de rattrapage créés.");
+        return onCreated();
+      }
       if (f.d2 < f.d1) return notify("La tranche 2 doit être après la tranche 1.", true);
       await q(sb.rpc("passer_niveau", {
         p_etudiant: etudiant.id, p_niveau: niveau, p_classe: classe, p_date: date,
@@ -178,17 +188,18 @@ function NouveauxFrais({ etudiantId, niveau, onCreated }) {
       <select id="f-type" value={f.type} onChange={choisirType}>
         <option value="inscription">Inscription</option>
         <option value="scolarite">Scolarité</option>
+        <option value="rattrapage">Rattrapage (1 seul versement)</option>
       </select>
       <label htmlFor="f-debut">Début des cours <span className="muted">(remplit les échéances : T1 au début, T2 deux semaines après)</span></label>
       <input id="f-debut" type="date" value={debut} onChange={onDebut} />
       <div className="row">
-        <div><label htmlFor="f-m1">Tranche 1 — montant (FCFA)</label><input id="f-m1" type="number" min="1" required value={f.m1} onChange={set("m1")} /></div>
-        <div><label htmlFor="f-d1">Tranche 1 — date limite</label><input id="f-d1" type="date" required value={f.d1} onChange={set("d1")} /></div>
+        <div><label htmlFor="f-m1">{f.type === "rattrapage" ? "Montant du rattrapage (FCFA)" : "Tranche 1 — montant (FCFA)"}</label><input id="f-m1" type="number" min="1" required value={f.m1} onChange={set("m1")} /></div>
+        <div><label htmlFor="f-d1">{f.type === "rattrapage" ? "Date limite" : "Tranche 1 — date limite"}</label><input id="f-d1" type="date" required value={f.d1} onChange={set("d1")} /></div>
       </div>
-      <div className="row">
-        <div><label htmlFor="f-m2">Tranche 2 — montant (FCFA)</label><input id="f-m2" type="number" min="1" required value={f.m2} onChange={set("m2")} /></div>
-        <div><label htmlFor="f-d2">Tranche 2 — date limite</label><input id="f-d2" type="date" required value={f.d2} onChange={set("d2")} /></div>
-      </div>
+      {f.type !== "rattrapage" && <div className="row">
+        <div><label htmlFor="f-m2">Tranche 2 — montant (FCFA)</label><input id="f-m2" type="number" min="1" required={f.type !== "rattrapage"} value={f.m2} onChange={set("m2")} /></div>
+        <div><label htmlFor="f-d2">Tranche 2 — date limite</label><input id="f-d2" type="date" required={f.type !== "rattrapage"} value={f.d2} onChange={set("d2")} /></div>
+      </div>}
       <button className="primary" style={{ marginTop: 16 }} disabled={busy}>Créer les frais</button>
     </form>
   );

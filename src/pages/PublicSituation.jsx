@@ -10,7 +10,7 @@ import { Badge } from "../components/ui.jsx";
 const CLE = "reisetur_acces";
 const lire = () => { try { return JSON.parse(localStorage.getItem(CLE) || "null"); } catch { return null; } };
 const ecrire = (v) => { try { v ? localStorage.setItem(CLE, JSON.stringify(v)) : localStorage.removeItem(CLE); } catch { /* sans stockage */ } };
-const objet = (type, numero) => (type === "inscription" ? "Inscription" : `Scolarité — tranche ${numero}`);
+const objet = (type, numero) => (type === "inscription" ? "Inscription" : type === "rattrapage" ? "Frais de rattrapage" : `Scolarité — tranche ${numero}`);
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
 // Icônes en traits fins (style « ligne »), colorées par le texte du bouton
