@@ -96,6 +96,15 @@ export default function PublicSituation() {
     setPdfBusy("");
   };
 
+  const invitation = async () => {
+    setPdfBusy("invit");
+    try {
+      const { invitationExamenPdf } = await import("../pdf.js");
+      await invitationExamenPdf({ nom: res.nom, matricule: res.matricule, niveau: res.niveau, classe: res.classe, examen: cal.examen, horaires: cal.horaires, salle: cal.salle });
+    } catch { setErr("L'invitation n'a pas pu être générée. Réessaie dans un instant."); }
+    setPdfBusy("");
+  };
+
   const attestationNiveau = async (r) => {
     setPdfBusy("niv" + r.niveau);
     try {
@@ -358,6 +367,12 @@ export default function PublicSituation() {
                 <div><b>Attestation d'inscription</b><div className="muted">{inscrite ? "Disponible" : "Disponible dès que l'inscription est réglée"}</div></div>
                 <button className="small" disabled={!inscrite || pdfBusy === "attestation"} onClick={attestation}>{pdfBusy === "attestation" ? "…" : "Télécharger"}</button>
               </div>
+              {cal?.examen && cal.examen >= new Date().toISOString().slice(0, 10) && (
+                <div className="sit-row recu">
+                  <div><b>Invitation à l'examen de passage</b><div className="muted">{res.reste > 0 ? `Disponible une fois tes frais réglés (reste ${res.reste.toLocaleString("fr-FR")} FCFA)` : `Examen du ${fdate(cal.examen)}`}</div></div>
+                  <button className="small" disabled={res.reste > 0 || pdfBusy === "invit"} onClick={invitation}>{pdfBusy === "invit" ? "…" : res.reste > 0 ? "Frais à régler" : "Télécharger"}</button>
+                </div>
+              )}
               {bloque && (
                 <div className="sit-row recu">
                   <div><b>Relevé de notes et attestations</b><div className="muted">Bloqués pour cause de non-paiement de frais dû</div></div>

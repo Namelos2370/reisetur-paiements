@@ -285,6 +285,44 @@ export async function attestationNiveauPdf(a) {
   doc.save(`Attestation_niveau_${slug(a.niveau)}_${slug(a.matricule || a.nom)}.pdf`);
 }
 
+// ---- Invitation à l'examen de passage (Abschlusstest) ----
+export async function invitationExamenPdf(a) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210;
+  entete(doc, await loadLogo());
+  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(20, 32, 51);
+  doc.text("INVITATION À L'EXAMEN DE PASSAGE", W / 2, 64, { align: "center" });
+  doc.setFontSize(12); doc.setTextColor(100, 112, 130);
+  doc.text("Abschlusstest — Langue allemande", W / 2, 72, { align: "center" });
+  doc.setDrawColor(...BLEU); doc.setLineWidth(0.7); doc.line(65, 77, W - 65, 77);
+
+  doc.setFont("helvetica", "normal"); doc.setFontSize(12.5); doc.setTextColor(20, 32, 51);
+  doc.text(doc.splitTextToSize(`${ECOLE.nom} a le plaisir d'inviter :`, W - 50), 25, 92);
+  const rows = [
+    ["Nom et prénoms", a.nom], ["Matricule", a.matricule],
+    ["Niveau", `Langue allemande - niveau ${a.niveau}`],
+    ...(a.classe ? [["Classe", a.classe]] : []),
+    ["Date de l'examen", dlongJour(a.examen)],
+    ...(a.horaires ? [["Horaire", a.horaires]] : []),
+    ...(a.salle ? [["Lieu / salle", a.salle]] : []),
+  ];
+  let y = 106;
+  rows.forEach(([k, v]) => {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11.5); doc.setTextColor(100, 112, 130); doc.text(k, 25, y);
+    doc.setFont("helvetica", "bold"); doc.setTextColor(20, 32, 51); doc.text(String(v), 80, y);
+    doc.setDrawColor(221, 227, 238); doc.setLineWidth(0.3); doc.line(25, y + 4, W - 25, y + 4); y += 12;
+  });
+  y += 8;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(20, 32, 51);
+  const corps = "à se présenter à l'examen de passage (Abschlusstest) de son niveau, aux date et lieu indiqués ci-dessus. Merci d'être présent(e) à l'heure, muni(e) de la présente invitation et d'une pièce d'identité. Les frais de scolarité doivent être entièrement réglés avant l'examen.";
+  doc.text(doc.splitTextToSize(corps, W - 50), 25, y, { lineHeightFactor: 1.5 });
+  signature(doc, Math.max(y + 45, 205));
+  doc.setFontSize(8.5); doc.setTextColor(120, 130, 150);
+  doc.text(`Invitation éditée le ${dlong(todayIso())} - ${ECOLE.nom}`, W / 2, 287, { align: "center" });
+  doc.save(`Invitation_examen_${slug(a.niveau)}_${slug(a.matricule || a.nom)}.pdf`);
+}
+
 // ---- Note de rappel d'échéance (une page par étudiant) ----
 function noteUnePage(doc, logo, it) {
   const W = 210;
