@@ -306,6 +306,7 @@ export async function invitationExamenPdf(a) {
     ["Date de l'examen", dlongJour(a.examen)],
     ...(a.horaires ? [["Horaire", a.horaires]] : []),
     ...(a.salle ? [["Lieu / salle", a.salle]] : []),
+    ...(a.sprechen ? [["Passage au Sprechen", a.sprechen]] : []),
   ];
   let y = 106;
   rows.forEach(([k, v]) => {
