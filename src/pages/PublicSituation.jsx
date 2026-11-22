@@ -408,46 +408,37 @@ export default function PublicSituation() {
 
             {onglet === "profil" && (
               <>
-            <h3 className="sit-h">Mes informations</h3>
-            <section className="sit-card">
-              <div className="sit-coord">
-                <div><span>Nom complet</span><b>{res.nom}</b></div>
-                <div><span>Matricule</span><b>{res.matricule}</b></div>
-                <div><span>Classe</span><b>{res.classe || "—"}</b></div>
-                <div><span>Niveau</span><b>{res.niveau || "—"}</b></div>
-                {cal?.formateur && <div><span>Formateur</span><b>{cal.formateur}</b></div>}
-                {(cal?.debut || cal?.fin) && <div><span>Période de cours</span><b>{cal.debut ? fdate(cal.debut) : "…"} → {cal.fin ? fdate(cal.fin) : "…"}</b></div>}
-              </div>
+            <section className="pf-card">
+              <div className="pf-head"><Ico d={ICONES.profil} /><b>Informations personnelles</b></div>
+              <div className="pf-row"><span>Nom complet</span><b>{prenomNom(res.nom)}</b></div>
+              <div className="pf-row"><span>Matricule</span><b>{res.matricule}</b></div>
+              <div className="pf-row"><span>Classe</span><b>{res.classe || "—"}</b></div>
+              <div className="pf-row"><span>Niveau</span><b>{res.niveau || "—"}</b></div>
+              {cal?.formateur && <div className="pf-row"><span>Formateur</span><b>{cal.formateur}</b></div>}
+              {(cal?.debut || cal?.fin) && <div className="pf-row"><span>Période de cours</span><b>{cal.debut ? fdate(cal.debut) : "…"} → {cal.fin ? fdate(cal.fin) : "…"}</b></div>}
             </section>
 
             {cal?.examen && (
-              <>
-                <h3 className="sit-h">Mon examen</h3>
-                <section className="sit-card">
-                  <div className="sit-coord">
-                    <div><span>Date de l'examen</span><b>{fdate(cal.examen)}</b></div>
-                    {cal.horaires && <div><span>Début des épreuves écrites</span><b>{cal.horaires}{cal.salle ? ` · ${cal.salle}` : ""}</b></div>}
-                    {res.passage?.heure_sprechen && <div><span>Passage au Sprechen</span><b>{res.passage.heure_sprechen} · {String(res.niveau || "").toUpperCase().startsWith("A2") ? "Salle Clausthal" : "Salle Humboldt"}</b></div>}
-                    <div><span>Frais</span><b>{res.reste > 0 ? `Reste ${res.reste.toLocaleString("fr-FR")} FCFA à régler` : "Soldés"}</b></div>
-                  </div>
-                </section>
-              </>
+              <section className="pf-card">
+                <div className="pf-head"><Ico d={ICONES.documents} /><b>Examen de passage</b></div>
+                <div className="pf-row"><span>Date</span><b>{fdate(cal.examen)}</b></div>
+                {cal.horaires && <div className="pf-row"><span>Épreuves écrites</span><b>{cal.horaires}{cal.salle ? ` · ${cal.salle}` : ""}</b></div>}
+                {res.passage?.heure_sprechen && <div className="pf-row"><span>Sprechen</span><b>{res.passage.heure_sprechen} · {String(res.niveau || "").toUpperCase().startsWith("A2") ? "Salle Clausthal" : "Salle Humboldt"}</b></div>}
+                <div className="pf-row"><span>Frais</span><b className={res.reste > 0 ? "pf-bad" : "pf-ok"}>{res.reste > 0 ? `Reste ${res.reste.toLocaleString("fr-FR")} FCFA` : "Soldés"}</b></div>
+              </section>
             )}
 
-            <h3 className="sit-h" id="coordonnees">Mes coordonnées</h3>
-            <section className="sit-card">
+            <section className="pf-card" id="coordonnees">
+              <div className="pf-head"><Ico d={ICONES.paiements} /><b>Coordonnées</b>{!coord && <button className="small pf-edit" onClick={ouvrirCoord}>Modifier</button>}</div>
               {!coord ? (
                 <>
-                  <div className="sit-coord">
-                    <div><span>Téléphone</span><b>{res.telephone || "—"}</b></div>
-                    <div><span>E-mail</span><b>{res.email || "—"}</b></div>
-                    <div><span>Ville</span><b>{res.ville || "—"}</b></div>
-                  </div>
-                  <button className="small" style={{ marginTop: 12 }} onClick={ouvrirCoord}>Modifier mes coordonnées</button>
-                  {coordMsg && <p className="sit-note" style={{ color: "var(--ok)" }}>{coordMsg}</p>}
+                  <div className="pf-row"><span>Téléphone</span><b>{res.telephone || "—"}</b></div>
+                  <div className="pf-row"><span>E-mail</span><b>{res.email || "—"}</b></div>
+                  <div className="pf-row"><span>Ville</span><b>{res.ville || "—"}</b></div>
+                  {coordMsg && <p className="sit-note" style={{ color: "var(--ok)", margin: "0", padding: "10px 18px 14px" }}>{coordMsg}</p>}
                 </>
               ) : (
-                <form onSubmit={enregistrerCoord}>
+                <form onSubmit={enregistrerCoord} style={{ padding: "6px 18px 18px" }}>
                   <label htmlFor="co-t">Téléphone (WhatsApp de préférence)</label>
                   <input id="co-t" type="tel" value={coord.tel} onChange={(e) => setCoord({ ...coord, tel: e.target.value })} />
                   <label htmlFor="co-e">E-mail</label>

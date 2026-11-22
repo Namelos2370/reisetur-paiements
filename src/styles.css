@@ -200,3 +200,15 @@ a.sit-lien { background: #fff; border: 1px solid var(--line); border-radius: 10p
 @media (max-width: 420px) { .sit-out span { display: none; } .sit-out { padding: 9px; } }
 .sit-hello { color: var(--muted); font-size: .95rem; margin-bottom: 2px; }
 .sit-mod small { display: block; color: var(--muted); font-size: .74rem; margin-top: 2px; }
+
+/* Onglet Profil */
+.pf-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+.pf-head { display: flex; align-items: center; gap: 10px; padding: 13px 18px; background: #f3f6fc; color: var(--brand); font-size: .95rem; }
+.pf-head svg { width: 20px; height: 20px; flex-shrink: 0; }
+.pf-head b { flex: 1; letter-spacing: .2px; }
+.pf-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.pf-row span { color: var(--muted); font-size: .9rem; flex-shrink: 0; }
+.pf-row b { text-align: right; overflow-wrap: anywhere; font-weight: 600; }
+.pf-ok { color: var(--ok); }
+.pf-bad { color: var(--bad); }
+.pf-card form label { display: block; margin-top: 12px; }
