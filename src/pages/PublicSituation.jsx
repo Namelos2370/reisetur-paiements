@@ -100,7 +100,7 @@ export default function PublicSituation() {
     setPdfBusy("invit");
     try {
       const { invitationExamenPdf } = await import("../pdf.js");
-      await invitationExamenPdf({ nom: res.nom, matricule: res.matricule, niveau: res.niveau, classe: res.classe, examen: cal.examen, horaires: cal.horaires, salle: cal.salle, sprechen: res.passage?.heure_sprechen });
+      await invitationExamenPdf({ nom: res.nom, matricule: res.matricule, niveau: res.niveau, classe: res.classe, examen: cal.examen, horaires: cal.horaires, salle: cal.salle, sprechen: res.passage?.heure_sprechen, salleSprechen: "Salle Clausthal" });
     } catch { setErr("L'invitation n'a pas pu être générée. Réessaie dans un instant."); }
     setPdfBusy("");
   };

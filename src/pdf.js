@@ -342,7 +342,7 @@ export async function invitationExamenPdf(a) {
   doc.setDrawColor(...BLEU); doc.setLineWidth(0.4); doc.line(25, y + 2, W - 25, y + 2);
   y += 7;
   const dcourte = new Date(iso(a.examen)).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-  const local = a.salle || "Salle d'examen";
+  let local = a.salle || "Salle d'examen";
   const ligne = (m, heure) => {
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(20, 32, 51);
     doc.text(m, 25, y); doc.text(local, 80, y, { maxWidth: 32 }); doc.text(dcourte, 115, y); doc.text(heure, 160, y);
@@ -351,13 +351,14 @@ export async function invitationExamenPdf(a) {
   lignes.forEach(([m, d, f]) => ligne(m, d != null ? `${hm(d)} - ${hm(f)}` : a.horaires));
   if (a.sprechen) {
     const [hh, mm] = String(a.sprechen).split(/[h:]/).map((x) => parseInt(x, 10));
+    if (a.salleSprechen) local = a.salleSprechen;
     ligne("Sprechen", Number.isFinite(hh) ? `${hm(hh * 60 + (mm || 0))} - ${hm(hh * 60 + (mm || 0) + 15)}` : String(a.sprechen));
   }
 
   y += 4;
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(20, 32, 51);
   const avant = debut != null ? ` (soit à ${hm(debut - 30)})` : "";
-  const corps = `Veuillez vous présenter 30 minutes avant le début de l'examen${avant}, muni(e) de la présente invitation et d'une pièce d'identité. Le passage au Sprechen se fait par binômes, à l'heure indiquée ci-dessus. Les frais de scolarité doivent être entièrement réglés avant l'examen. Nous vous souhaitons beaucoup de réussite !`;
+  const corps = `Veuillez vous présenter 30 minutes avant le début de l'examen${avant}, muni(e) de la présente invitation et d'une pièce d'identité. Le Sprechen se passe individuellement, à l'heure indiquée ci-dessus. Les frais de scolarité doivent être entièrement réglés avant l'examen. Nous vous souhaitons beaucoup de réussite !`;
   const lines = doc.splitTextToSize(corps, W - 50);
   doc.text(lines, 25, y, { lineHeightFactor: 1.45 });
   y += lines.length * 6.4;
