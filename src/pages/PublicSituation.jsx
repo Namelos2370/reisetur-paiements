@@ -408,6 +408,32 @@ export default function PublicSituation() {
 
             {onglet === "profil" && (
               <>
+            <h3 className="sit-h">Mes informations</h3>
+            <section className="sit-card">
+              <div className="sit-coord">
+                <div><span>Nom complet</span><b>{res.nom}</b></div>
+                <div><span>Matricule</span><b>{res.matricule}</b></div>
+                <div><span>Classe</span><b>{res.classe || "—"}</b></div>
+                <div><span>Niveau</span><b>{res.niveau || "—"}</b></div>
+                {cal?.formateur && <div><span>Formateur</span><b>{cal.formateur}</b></div>}
+                {(cal?.debut || cal?.fin) && <div><span>Période de cours</span><b>{cal.debut ? fdate(cal.debut) : "…"} → {cal.fin ? fdate(cal.fin) : "…"}</b></div>}
+              </div>
+            </section>
+
+            {cal?.examen && (
+              <>
+                <h3 className="sit-h">Mon examen</h3>
+                <section className="sit-card">
+                  <div className="sit-coord">
+                    <div><span>Date de l'examen</span><b>{fdate(cal.examen)}</b></div>
+                    {cal.horaires && <div><span>Début des épreuves écrites</span><b>{cal.horaires}{cal.salle ? ` · ${cal.salle}` : ""}</b></div>}
+                    {res.passage?.heure_sprechen && <div><span>Passage au Sprechen</span><b>{res.passage.heure_sprechen} · {String(res.niveau || "").toUpperCase().startsWith("A2") ? "Salle Clausthal" : "Salle Humboldt"}</b></div>}
+                    <div><span>Frais</span><b>{res.reste > 0 ? `Reste ${res.reste.toLocaleString("fr-FR")} FCFA à régler` : "Soldés"}</b></div>
+                  </div>
+                </section>
+              </>
+            )}
+
             <h3 className="sit-h" id="coordonnees">Mes coordonnées</h3>
             <section className="sit-card">
               {!coord ? (
