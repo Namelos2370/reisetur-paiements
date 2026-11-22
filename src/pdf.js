@@ -362,9 +362,11 @@ export async function invitationExamenPdf(a) {
   const lines = doc.splitTextToSize(corps, W - 50);
   doc.text(lines, 25, y, { lineHeightFactor: 1.45 });
   y += lines.length * 6.4;
-  signature(doc, Math.min(Math.max(y + 8, 200), 238));
-  doc.setFontSize(8.5); doc.setTextColor(120, 130, 150);
-  doc.text(`Invitation éditée le ${dlong(todayIso())} - ${ECOLE.nom}`, W / 2, 289, { align: "center" });
+  const ys = Math.min(Math.max(y + 10, 200), 250);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(20, 32, 51);
+  doc.text(`Fait à ${ECOLE.ville}, le ${dlong(todayIso())}`, W - 15, ys, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.text(ECOLE.direction, W - 50, ys + 10, { align: "center" });
   doc.save(`Invitation_examen_${slug(a.niveau)}_${slug(a.matricule || a.nom)}.pdf`);
 }
 
