@@ -286,41 +286,84 @@ export async function attestationNiveauPdf(a) {
 }
 
 // ---- Invitation à l'examen de passage (Abschlusstest) ----
+// Planning des épreuves écrites selon le niveau (minutes) — l'ordre est celui de l'examen
+const EPREUVES_EXAMEN = {
+  A1: [["Hören", 20], ["Lesen + Schreiben", 50], ["Grammatik", 15]],
+  A2: [["Hören", 30], ["Lesen", 30], ["Schreiben", 30], ["Grammatik", 20]],
+};
+const hm = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}h${String(min % 60).padStart(2, "0")}`;
+
 export async function invitationExamenPdf(a) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = 210;
   entete(doc, await loadLogo());
-  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(20, 32, 51);
-  doc.text("INVITATION À L'EXAMEN DE PASSAGE", W / 2, 64, { align: "center" });
-  doc.setFontSize(12); doc.setTextColor(100, 112, 130);
-  doc.text("Abschlusstest — Langue allemande", W / 2, 72, { align: "center" });
-  doc.setDrawColor(...BLEU); doc.setLineWidth(0.7); doc.line(65, 77, W - 65, 77);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(20, 32, 51);
+  doc.text("INVITATION À L'EXAMEN DE PASSAGE", W / 2, 60, { align: "center" });
+  doc.setFontSize(11.5); doc.setTextColor(100, 112, 130);
+  doc.text("Abschlusstest — Langue allemande", W / 2, 67, { align: "center" });
+  doc.setDrawColor(...BLEU); doc.setLineWidth(0.7); doc.line(65, 71, W - 65, 71);
 
-  doc.setFont("helvetica", "normal"); doc.setFontSize(12.5); doc.setTextColor(20, 32, 51);
-  doc.text(doc.splitTextToSize(`${ECOLE.nom} a le plaisir d'inviter :`, W - 50), 25, 92);
+  // Début de l'examen (ex. "09h00") -> minutes
+  const mh = /(\d{1,2})\s*[h:]\s*(\d{2})?/i.exec(a.horaires || "");
+  const debut = mh ? Number(mh[1]) * 60 + Number(mh[2] || 0) : null;
+  const plan = EPREUVES_EXAMEN[String(a.niveau || "").toUpperCase().slice(0, 2)];
+
+  doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(20, 32, 51);
+  doc.text(`${ECOLE.nom} a le plaisir d'inviter :`, 25, 82);
   const rows = [
-    ["Nom et prénoms", a.nom], ["Matricule", a.matricule],
+    ["Nom et prénoms", a.nom], ["Numéro de candidat", a.matricule],
     ["Niveau", `Langue allemande - niveau ${a.niveau}`],
     ...(a.classe ? [["Classe", a.classe]] : []),
     ["Date de l'examen", dlongJour(a.examen)],
-    ...(a.horaires ? [["Horaire", a.horaires]] : []),
     ...(a.salle ? [["Lieu / salle", a.salle]] : []),
-    ...(a.sprechen ? [["Passage au Sprechen", a.sprechen]] : []),
   ];
-  let y = 106;
+  let y = 92;
   rows.forEach(([k, v]) => {
-    doc.setFont("helvetica", "normal"); doc.setFontSize(11.5); doc.setTextColor(100, 112, 130); doc.text(k, 25, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(100, 112, 130); doc.text(k, 25, y);
     doc.setFont("helvetica", "bold"); doc.setTextColor(20, 32, 51); doc.text(String(v), 80, y);
-    doc.setDrawColor(221, 227, 238); doc.setLineWidth(0.3); doc.line(25, y + 4, W - 25, y + 4); y += 12;
+    doc.setDrawColor(221, 227, 238); doc.setLineWidth(0.3); doc.line(25, y + 3, W - 25, y + 3); y += 9;
   });
-  y += 8;
-  doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(20, 32, 51);
-  const corps = "à se présenter à l'examen de passage (Abschlusstest) de son niveau, aux date et lieu indiqués ci-dessus. Merci d'être présent(e) à l'heure, muni(e) de la présente invitation et d'une pièce d'identité. Les frais de scolarité doivent être entièrement réglés avant l'examen.";
-  doc.text(doc.splitTextToSize(corps, W - 50), 25, y, { lineHeightFactor: 1.5 });
-  signature(doc, Math.max(y + 45, 205));
+
+  // Tableau des épreuves : Désignation / Local / Date / Heure
+  const lignes = [];
+  if (plan && debut != null) {
+    let t = debut;
+    plan.forEach(([m, d]) => { lignes.push([m, t, t + d]); t += d; });
+  } else if (a.horaires) {
+    lignes.push(["Épreuves écrites", null, null]);
+  }
+  y += 5;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(20, 32, 51);
+  doc.text("Vous êtes inscrit(e) aux modules suivants :", 25, y);
+  y += 7;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+  doc.text("Désignation", 25, y); doc.text("Local", 80, y); doc.text("Date", 115, y); doc.text("Heure", 160, y);
+  doc.setDrawColor(...BLEU); doc.setLineWidth(0.4); doc.line(25, y + 2, W - 25, y + 2);
+  y += 7;
+  const dcourte = new Date(iso(a.examen)).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const local = a.salle || "Salle d'examen";
+  const ligne = (m, heure) => {
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(20, 32, 51);
+    doc.text(m, 25, y); doc.text(local, 80, y, { maxWidth: 32 }); doc.text(dcourte, 115, y); doc.text(heure, 160, y);
+    y += 7;
+  };
+  lignes.forEach(([m, d, f]) => ligne(m, d != null ? `${hm(d)} - ${hm(f)}` : a.horaires));
+  if (a.sprechen) {
+    const [hh, mm] = String(a.sprechen).split(/[h:]/).map((x) => parseInt(x, 10));
+    ligne("Sprechen", Number.isFinite(hh) ? `${hm(hh * 60 + (mm || 0))} - ${hm(hh * 60 + (mm || 0) + 15)}` : String(a.sprechen));
+  }
+
+  y += 4;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(20, 32, 51);
+  const avant = debut != null ? ` (soit à ${hm(debut - 30)})` : "";
+  const corps = `Veuillez vous présenter 30 minutes avant le début de l'examen${avant}, muni(e) de la présente invitation et d'une pièce d'identité. Le passage au Sprechen se fait par binômes, à l'heure indiquée ci-dessus. Les frais de scolarité doivent être entièrement réglés avant l'examen. Nous vous souhaitons beaucoup de réussite !`;
+  const lines = doc.splitTextToSize(corps, W - 50);
+  doc.text(lines, 25, y, { lineHeightFactor: 1.45 });
+  y += lines.length * 6.4;
+  signature(doc, Math.min(Math.max(y + 8, 200), 238));
   doc.setFontSize(8.5); doc.setTextColor(120, 130, 150);
-  doc.text(`Invitation éditée le ${dlong(todayIso())} - ${ECOLE.nom}`, W / 2, 287, { align: "center" });
+  doc.text(`Invitation éditée le ${dlong(todayIso())} - ${ECOLE.nom}`, W / 2, 289, { align: "center" });
   doc.save(`Invitation_examen_${slug(a.niveau)}_${slug(a.matricule || a.nom)}.pdf`);
 }
 
