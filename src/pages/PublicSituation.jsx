@@ -29,7 +29,67 @@ const ICONES = {
 // « NNTOUBA EBOUELLE RACHEL » → « Nntouba Ebouelle Rachel »
 const prenomNom = (n) => String(n || "").toLocaleLowerCase("fr").replace(/(^|[\s'-])(\p{L})/gu, (m, sep, c) => sep + c.toLocaleUpperCase("fr"));
 
-const ONGLETS = [["accueil", "Accueil"], ["paiements", "Paiements"], ["cours", "Cours"], ["documents", "Documents"], ["profil", "Profil"]];
+const ONGLETS = ["accueil", "paiements", "cours", "documents", "profil"];
+const NIVEAUX = ["A1", "A2", "B1", "B2", "C1"];
+
+// Libellés FR / DE (accueil, onglets et fiche Profil)
+const T = {
+  fr: {
+    accueil: "Accueil", paiements: "Paiements", cours: "Cours", documents: "Documents", profil: "Profil",
+    bonjour: "Bonjour,", espace: "Espace étudiant",
+    pf_complet: "Profil complété", pf_invite: "Complète ton profil pour faciliter le suivi de ton dossier.",
+    parcours: "Progression", niveau_actuel: "Niveau actuel", valide: "Validé", encours: "En cours",
+    infos: "Informations personnelles", nom: "Nom complet", matricule: "Matricule", classe: "Classe", niveau: "Niveau", formateur: "Formateur", periode: "Période de cours",
+    identite: "État civil", naissance: "Date de naissance", lieu: "Lieu de naissance", nationalite: "Nationalité", modifier: "Modifier", enregistrer: "Enregistrer", annuler: "Annuler", non_renseigne: "Non renseigné",
+    examen: "Examen de passage", date: "Date", ecrites: "Épreuves écrites", sprechen: "Sprechen", frais: "Frais", soldes: "Soldés", reste: "Reste",
+    coord: "Coordonnées", tel: "Téléphone", email: "E-mail", ville: "Ville", tel_l: "Téléphone (WhatsApp de préférence)",
+    contact: "Contacter l'école", whatsapp: "WhatsApp", appeler: "Appeler", adresse: "Adresse", itineraire: "Voir sur la carte",
+    securite: "Sécurité", code: "Code d'accès", changer_code: "Changer mon code", nouveau_code: "Nouveau code (6 à 16 caractères : lettres, chiffres, tiret)", derniere: "Dernière connexion", premiere: "Première connexion",
+    prefs: "Préférences", theme: "Apparence", clair: "Clair", sombre: "Sombre", langue: "Langue",
+    photo_ajouter: "Ajouter une photo", photo_changer: "Changer la photo", photo_retirer: "Retirer",
+    deconnexion: "Se déconnecter", ecrire_wa: "Écrire à la direction sur WhatsApp",
+  },
+  de: {
+    accueil: "Start", paiements: "Zahlungen", cours: "Kurs", documents: "Dokumente", profil: "Profil",
+    bonjour: "Hallo,", espace: "Studierendenbereich",
+    pf_complet: "Profil vollständig", pf_invite: "Vervollständige dein Profil, damit wir deine Akte besser betreuen können.",
+    parcours: "Fortschritt", niveau_actuel: "Aktuelles Niveau", valide: "Bestanden", encours: "Laufend",
+    infos: "Persönliche Angaben", nom: "Vollständiger Name", matricule: "Matrikelnummer", classe: "Klasse", niveau: "Niveau", formateur: "Dozent/in", periode: "Kurszeitraum",
+    identite: "Personalien", naissance: "Geburtsdatum", lieu: "Geburtsort", nationalite: "Staatsangehörigkeit", modifier: "Ändern", enregistrer: "Speichern", annuler: "Abbrechen", non_renseigne: "Nicht angegeben",
+    examen: "Abschlusstest", date: "Datum", ecrites: "Schriftliche Prüfungen", sprechen: "Sprechen", frais: "Gebühren", soldes: "Beglichen", reste: "Offen",
+    coord: "Kontaktdaten", tel: "Telefon", email: "E-Mail", ville: "Stadt", tel_l: "Telefon (am besten WhatsApp)",
+    contact: "Schule kontaktieren", whatsapp: "WhatsApp", appeler: "Anrufen", adresse: "Adresse", itineraire: "Auf der Karte ansehen",
+    securite: "Sicherheit", code: "Zugangscode", changer_code: "Code ändern", nouveau_code: "Neuer Code (6–16 Zeichen: Buchstaben, Ziffern, Bindestrich)", derniere: "Letzte Anmeldung", premiere: "Erste Anmeldung",
+    prefs: "Einstellungen", theme: "Darstellung", clair: "Hell", sombre: "Dunkel", langue: "Sprache",
+    photo_ajouter: "Foto hinzufügen", photo_changer: "Foto ändern", photo_retirer: "Entfernen",
+    deconnexion: "Abmelden", ecrire_wa: "Der Schulleitung per WhatsApp schreiben",
+  },
+};
+const memoGet = (k, d) => { try { return localStorage.getItem(k) || d; } catch { return d; } };
+const memoSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sans stockage */ } };
+const initiales = (n) => String(n || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0].toLocaleUpperCase("fr")).join("") || "?";
+const Avatar = ({ nom, photo, taille = 64 }) => (
+  <span className="pf-avatar" style={{ width: taille, height: taille, fontSize: taille * 0.38 }}>
+    {photo ? <img src={photo} alt="" /> : initiales(nom)}
+  </span>
+);
+// Réduit une photo à 200 px (JPEG) avant envoi
+const reduirePhoto = (file) => new Promise((resolve, reject) => {
+  const fr = new FileReader();
+  fr.onerror = reject;
+  fr.onload = () => {
+    const im = new Image();
+    im.onerror = reject;
+    im.onload = () => {
+      const c = document.createElement("canvas"); const t = 200; c.width = t; c.height = t;
+      const k = Math.max(t / im.width, t / im.height); const w = im.width * k; const h = im.height * k;
+      c.getContext("2d").drawImage(im, (t - w) / 2, (t - h) / 2, w, h);
+      resolve(c.toDataURL("image/jpeg", 0.8));
+    };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+});
 
 export default function PublicSituation() {
   const [matricule, setMatricule] = useState("");
@@ -129,6 +189,21 @@ export default function PublicSituation() {
   const [onglet, setOnglet] = useState("accueil");
   const deconnecter = () => { ecrire(null); setOnglet("accueil"); setRes(null); setCode(""); setErr(""); setCoord(null); window.scrollTo({ top: 0 }); };
   const aller = (k) => { setOnglet(k); window.scrollTo({ top: 0 }); };
+  const [lang, setLang] = useState(() => (memoGet("sit_lang", "fr") === "de" ? "de" : "fr"));
+  const [theme, setTheme] = useState(() => (memoGet("sit_theme", "clair") === "sombre" ? "sombre" : "clair"));
+  const t = (k) => T[lang][k] ?? T.fr[k] ?? k;
+  useEffect(() => {
+    const el = document.documentElement;
+    if (theme === "sombre") el.setAttribute("data-sit-theme", "sombre"); else el.removeAttribute("data-sit-theme");
+    return () => el.removeAttribute("data-sit-theme");
+  }, [theme]);
+  const choisirLang = (l) => { setLang(l); memoSet("sit_lang", l); };
+  const choisirTheme = (v) => { setTheme(v); memoSet("sit_theme", v); };
+  const [ident, setIdent] = useState(null); // { naiss, lieu, nat } en cours de saisie
+  const [identMsg, setIdentMsg] = useState("");
+  const [secu, setSecu] = useState(null); // { nouveau } en cours de saisie
+  const [secuMsg, setSecuMsg] = useState("");
+  const [photoMsg, setPhotoMsg] = useState("");
   const [coord, setCoord] = useState(null); // { tel, email, ville } en cours de saisie
   const [coordMsg, setCoordMsg] = useState("");
   const ouvrirCoord = () => { setOnglet("profil"); setCoordMsg(""); setCoord({ tel: res.telephone || "", email: res.email || "", ville: res.ville || "" }); setTimeout(() => document.getElementById("coordonnees")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
@@ -142,6 +217,44 @@ export default function PublicSituation() {
     setCoord(null); setCoordMsg("Coordonnées enregistrées");
   };
 
+  const enregistrerIdent = async (e) => {
+    e.preventDefault();
+    setBusy(true); setIdentMsg("");
+    const { data, error } = await sb.rpc("maj_mes_identite", { p_matricule: res.matricule, p_code: code, p_naissance: ident.naiss || null, p_lieu: ident.lieu, p_nationalite: ident.nat });
+    setBusy(false);
+    if (error || !data) return setIdentMsg("Enregistrement impossible. Vérifie la date de naissance puis réessaie.");
+    setRes((r) => ({ ...r, date_naissance: ident.naiss || null, lieu_naissance: ident.lieu.trim() || null, nationalite: ident.nat.trim() || null }));
+    setIdent(null); setIdentMsg("Informations enregistrées");
+  };
+  const changerPhoto = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    setPhotoMsg("");
+    try {
+      const img = await reduirePhoto(f);
+      const { data, error } = await sb.rpc("maj_ma_photo", { p_matricule: res.matricule, p_code: code, p_photo: img });
+      if (error || !data) return setPhotoMsg("La photo n'a pas pu être enregistrée.");
+      setRes((r) => ({ ...r, photo: img }));
+    } catch { setPhotoMsg("Cette image n'a pas pu être lue. Essaie une autre photo."); }
+  };
+  const retirerPhoto = async () => {
+    const { data } = await sb.rpc("maj_ma_photo", { p_matricule: res.matricule, p_code: code, p_photo: null });
+    if (data) setRes((r) => ({ ...r, photo: null }));
+  };
+  const enregistrerCode = async (e) => {
+    e.preventDefault();
+    setBusy(true); setSecuMsg("");
+    const nouveau = secu.nouveau.trim().toUpperCase().replace(/\s/g, "");
+    const { data, error } = await sb.rpc("changer_mon_code", { p_matricule: res.matricule, p_code: code, p_nouveau: nouveau });
+    setBusy(false);
+    if (error) return setSecuMsg("Changement impossible pour le moment. Réessaie dans un instant.");
+    if (data === "format") return setSecuMsg("Le code doit faire 6 à 16 caractères (lettres, chiffres ou tiret).");
+    if (data === "identique") return setSecuMsg("Le nouveau code doit être différent de l'actuel.");
+    if (data !== "ok") return setSecuMsg("Changement refusé.");
+    if (lire()) ecrire({ m: res.matricule, c: nouveau });
+    setCode(nouveau); setSecu(null); setSecuMsg("Code d'accès modifié. Utilise-le à ta prochaine connexion.");
+  };
+
   // Parcours : un niveau par ligne, avec son résultat d'examen
   const niveauxParcours = [...new Set([...(res?.parcours || []).map((p) => p.niveau), ...(res?.resultats || []).map((r) => r.niveau)])];
   const lignesParcours = niveauxParcours.map((n) => ({
@@ -150,6 +263,9 @@ export default function PublicSituation() {
     r: (res.resultats || []).find((x) => x.niveau === n),
   }));
   const bloque = !!res?.resultats_bloques;
+  const niveauxValides = (res?.resultats || []).filter((r) => r.statut === "reussi").map((r) => r.niveau);
+  const champsProfil = res ? [res.telephone, res.email, res.ville, res.date_naissance, res.lieu_naissance, res.nationalite, res.photo] : [];
+  const completion = champsProfil.length ? Math.round((champsProfil.filter(Boolean).length / champsProfil.length) * 100) : 0;
   const aRepasser = (res?.resultats || []).map((r) => ({ niveau: r.niveau, statut: r.statut, modules: modulesARepasser(r.modules) })).filter((x) => x.modules.length && !bloque);
   const avecModules = (res?.resultats || []).filter((r) => r.modules?.length);
   const attestations = (res?.resultats || []).filter((r) => r.statut === "reussi");
@@ -171,7 +287,7 @@ export default function PublicSituation() {
         <img src="/logo.png" alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} />
         <div>
           <h1>{nomCentre}</h1>
-          <p>{res ? "Mon profil" : "Espace étudiant"}</p>
+          <p>{t("espace")}</p>
         </div>
         {res && (
           <button className="sit-out" onClick={deconnecter} aria-label="Se déconnecter">
@@ -199,8 +315,13 @@ export default function PublicSituation() {
         {res && (
           <>
             <section className="sit-card sit-id">
-              <div className="sit-hello">Bonjour,</div>
-              <div className="sit-nom">{prenomNom(res.nom)}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <Avatar nom={res.nom} photo={res.photo} taille={54} />
+                <div style={{ minWidth: 0 }}>
+                  <div className="sit-hello">{t("bonjour")}</div>
+                  <div className="sit-nom">{prenomNom(res.nom)}</div>
+                </div>
+              </div>
               <div className="sit-chips">
                 <span>{res.matricule}</span>
                 {res.classe && <span>{res.classe}</span>}
@@ -408,62 +529,160 @@ export default function PublicSituation() {
 
             {onglet === "profil" && (
               <>
+            <section className="pf-hero">
+              <Avatar nom={res.nom} photo={res.photo} taille={84} />
+              <div className="pf-hero-t">
+                <b>{prenomNom(res.nom)}</b>
+                <span>{res.matricule}{res.classe ? ` · ${res.classe}` : ""}</span>
+                <div className="pf-photo-actions">
+                  <label className="small pf-btn">{res.photo ? t("photo_changer") : t("photo_ajouter")}<input type="file" accept="image/*" onChange={changerPhoto} hidden /></label>
+                  {res.photo && <button type="button" className="small pf-btn" onClick={retirerPhoto}>{t("photo_retirer")}</button>}
+                </div>
+              </div>
+            </section>
+            {photoMsg && <p className="badge bad" style={{ display: "block", marginBottom: 12 }}>{photoMsg}</p>}
+
+            <section className="pf-card pf-progress">
+              <div className="pf-progress-top"><b>{t("pf_complet")}</b><span>{completion}%</span></div>
+              <div className="pf-bar"><i style={{ width: completion + "%" }} /></div>
+              {completion < 100 && <p className="muted" style={{ margin: "8px 0 0", fontSize: ".88rem" }}>{t("pf_invite")}</p>}
+            </section>
+
             <section className="pf-card">
-              <div className="pf-head"><Ico d={ICONES.profil} /><b>Informations personnelles</b></div>
-              <div className="pf-row"><span>Nom complet</span><b>{prenomNom(res.nom)}</b></div>
-              <div className="pf-row"><span>Matricule</span><b>{res.matricule}</b></div>
-              <div className="pf-row"><span>Classe</span><b>{res.classe || "—"}</b></div>
-              <div className="pf-row"><span>Niveau</span><b>{res.niveau || "—"}</b></div>
-              {cal?.formateur && <div className="pf-row"><span>Formateur</span><b>{cal.formateur}</b></div>}
-              {(cal?.debut || cal?.fin) && <div className="pf-row"><span>Période de cours</span><b>{cal.debut ? fdate(cal.debut) : "…"} → {cal.fin ? fdate(cal.fin) : "…"}</b></div>}
+              <div className="pf-head"><Ico d={ICONES.cours} /><b>{t("parcours")}</b></div>
+              <div className="pf-steps">
+                {NIVEAUX.map((n) => {
+                  const ok = niveauxValides.includes(n); const cur = n === res.niveau && !ok;
+                  return (
+                    <div key={n} className={"pf-step" + (ok ? " ok" : cur ? " cur" : "")}>
+                      <i>{ok ? "✓" : n}</i>
+                      <span>{ok ? t("valide") : cur ? t("encours") : n}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="pf-row"><span>{t("niveau_actuel")}</span><b>{res.niveau || "—"}</b></div>
+            </section>
+
+            <section className="pf-card">
+              <div className="pf-head"><Ico d={ICONES.profil} /><b>{t("infos")}</b></div>
+              <div className="pf-row"><span>{t("nom")}</span><b>{prenomNom(res.nom)}</b></div>
+              <div className="pf-row"><span>{t("matricule")}</span><b>{res.matricule}</b></div>
+              <div className="pf-row"><span>{t("classe")}</span><b>{res.classe || "—"}</b></div>
+              <div className="pf-row"><span>{t("niveau")}</span><b>{res.niveau || "—"}</b></div>
+              {cal?.formateur && <div className="pf-row"><span>{t("formateur")}</span><b>{cal.formateur}</b></div>}
+              {(cal?.debut || cal?.fin) && <div className="pf-row"><span>{t("periode")}</span><b>{cal.debut ? fdate(cal.debut) : "…"} → {cal.fin ? fdate(cal.fin) : "…"}</b></div>}
+            </section>
+
+            <section className="pf-card" id="identite">
+              <div className="pf-head"><Ico d={ICONES.documents} /><b>{t("identite")}</b>{!ident && <button className="small pf-edit" onClick={() => { setIdentMsg(""); setIdent({ naiss: res.date_naissance || "", lieu: res.lieu_naissance || "", nat: res.nationalite || "" }); }}>{t("modifier")}</button>}</div>
+              {!ident ? (
+                <>
+                  <div className="pf-row"><span>{t("naissance")}</span><b className={res.date_naissance ? "" : "pf-vide"}>{res.date_naissance ? fdate(res.date_naissance) : t("non_renseigne")}</b></div>
+                  <div className="pf-row"><span>{t("lieu")}</span><b className={res.lieu_naissance ? "" : "pf-vide"}>{res.lieu_naissance || t("non_renseigne")}</b></div>
+                  <div className="pf-row"><span>{t("nationalite")}</span><b className={res.nationalite ? "" : "pf-vide"}>{res.nationalite || t("non_renseigne")}</b></div>
+                  {identMsg && <p className="sit-note" style={{ color: "var(--ok)", margin: 0, padding: "10px 18px 14px" }}>{identMsg}</p>}
+                </>
+              ) : (
+                <form onSubmit={enregistrerIdent} style={{ padding: "6px 18px 18px" }}>
+                  <label htmlFor="id-n">{t("naissance")}</label>
+                  <input id="id-n" type="date" value={ident.naiss} max={aujourdhui()} onChange={(e) => setIdent({ ...ident, naiss: e.target.value })} />
+                  <label htmlFor="id-l">{t("lieu")}</label>
+                  <input id="id-l" value={ident.lieu} onChange={(e) => setIdent({ ...ident, lieu: e.target.value })} />
+                  <label htmlFor="id-a">{t("nationalite")}</label>
+                  <input id="id-a" value={ident.nat} onChange={(e) => setIdent({ ...ident, nat: e.target.value })} />
+                  <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                    <button className="primary" disabled={busy}>{t("enregistrer")}</button>
+                    <button type="button" onClick={() => setIdent(null)}>{t("annuler")}</button>
+                  </div>
+                  {identMsg && <p className="badge bad" style={{ marginTop: 12, display: "block" }}>{identMsg}</p>}
+                </form>
+              )}
             </section>
 
             {cal?.examen && (
               <section className="pf-card">
-                <div className="pf-head"><Ico d={ICONES.documents} /><b>Examen de passage</b></div>
-                <div className="pf-row"><span>Date</span><b>{fdate(cal.examen)}</b></div>
-                {cal.horaires && <div className="pf-row"><span>Épreuves écrites</span><b>{cal.horaires}{cal.salle ? ` · ${cal.salle}` : ""}</b></div>}
-                {res.passage?.heure_sprechen && <div className="pf-row"><span>Sprechen</span><b>{res.passage.heure_sprechen} · {String(res.niveau || "").toUpperCase().startsWith("A2") ? "Salle Clausthal" : "Salle Humboldt"}</b></div>}
-                <div className="pf-row"><span>Frais</span><b className={res.reste > 0 ? "pf-bad" : "pf-ok"}>{res.reste > 0 ? `Reste ${res.reste.toLocaleString("fr-FR")} FCFA` : "Soldés"}</b></div>
+                <div className="pf-head"><Ico d={ICONES.documents} /><b>{t("examen")}</b></div>
+                <div className="pf-row"><span>{t("date")}</span><b>{fdate(cal.examen)}</b></div>
+                {cal.horaires && <div className="pf-row"><span>{t("ecrites")}</span><b>{cal.horaires}{cal.salle ? ` · ${cal.salle}` : ""}</b></div>}
+                {res.passage?.heure_sprechen && <div className="pf-row"><span>{t("sprechen")}</span><b>{res.passage.heure_sprechen} · {String(res.niveau || "").toUpperCase().startsWith("A2") ? "Salle Clausthal" : "Salle Humboldt"}</b></div>}
+                <div className="pf-row"><span>{t("frais")}</span><b className={res.reste > 0 ? "pf-bad" : "pf-ok"}>{res.reste > 0 ? `${t("reste")} ${res.reste.toLocaleString("fr-FR")} FCFA` : t("soldes")}</b></div>
               </section>
             )}
 
             <section className="pf-card" id="coordonnees">
-              <div className="pf-head"><Ico d={ICONES.paiements} /><b>Coordonnées</b>{!coord && <button className="small pf-edit" onClick={ouvrirCoord}>Modifier</button>}</div>
+              <div className="pf-head"><Ico d={ICONES.paiements} /><b>{t("coord")}</b>{!coord && <button className="small pf-edit" onClick={ouvrirCoord}>{t("modifier")}</button>}</div>
               {!coord ? (
                 <>
-                  <div className="pf-row"><span>Téléphone</span><b>{res.telephone || "—"}</b></div>
-                  <div className="pf-row"><span>E-mail</span><b>{res.email || "—"}</b></div>
-                  <div className="pf-row"><span>Ville</span><b>{res.ville || "—"}</b></div>
+                  <div className="pf-row"><span>{t("tel")}</span><b className={res.telephone ? "" : "pf-vide"}>{res.telephone || t("non_renseigne")}</b></div>
+                  <div className="pf-row"><span>{t("email")}</span><b className={res.email ? "" : "pf-vide"}>{res.email || t("non_renseigne")}</b></div>
+                  <div className="pf-row"><span>{t("ville")}</span><b className={res.ville ? "" : "pf-vide"}>{res.ville || t("non_renseigne")}</b></div>
                   {coordMsg && <p className="sit-note" style={{ color: "var(--ok)", margin: "0", padding: "10px 18px 14px" }}>{coordMsg}</p>}
                 </>
               ) : (
                 <form onSubmit={enregistrerCoord} style={{ padding: "6px 18px 18px" }}>
-                  <label htmlFor="co-t">Téléphone (WhatsApp de préférence)</label>
+                  <label htmlFor="co-t">{t("tel_l")}</label>
                   <input id="co-t" type="tel" value={coord.tel} onChange={(e) => setCoord({ ...coord, tel: e.target.value })} />
-                  <label htmlFor="co-e">E-mail</label>
+                  <label htmlFor="co-e">{t("email")}</label>
                   <input id="co-e" type="email" value={coord.email} onChange={(e) => setCoord({ ...coord, email: e.target.value })} />
-                  <label htmlFor="co-v">Ville</label>
+                  <label htmlFor="co-v">{t("ville")}</label>
                   <input id="co-v" value={coord.ville} onChange={(e) => setCoord({ ...coord, ville: e.target.value })} />
                   <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                    <button className="primary" disabled={busy}>Enregistrer</button>
-                    <button type="button" onClick={() => setCoord(null)}>Annuler</button>
+                    <button className="primary" disabled={busy}>{t("enregistrer")}</button>
+                    <button type="button" onClick={() => setCoord(null)}>{t("annuler")}</button>
                   </div>
                   {coordMsg && <p className="badge bad" style={{ marginTop: 12, display: "block" }}>{coordMsg}</p>}
                 </form>
               )}
             </section>
 
-            {wa && <a className="sit-wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">Écrire à la direction sur WhatsApp</a>}
+            {(wa || ecoleInfo.adresse || ecoleInfo.contact) && (
+              <section className="pf-card">
+                <div className="pf-head"><Ico d={ICONES.accueil} /><b>{t("contact")}</b></div>
+                {ecoleInfo.adresse && <div className="pf-row"><span>{t("adresse")}</span><b>{ecoleInfo.adresse}</b></div>}
+                {ecoleInfo.contact && <div className="pf-row"><span>{lang === "de" ? "Kontakt" : "Contact"}</span><b>{ecoleInfo.contact}</b></div>}
+                <div className="pf-actions">
+                  {wa && <a className="pf-act wa" href={`https://wa.me/${wa}?text=${encodeURIComponent(`Bonjour, je suis ${res.nom} (matricule ${res.matricule}).`)}`} target="_blank" rel="noreferrer">{t("whatsapp")}</a>}
+                  {wa && <a className="pf-act" href={`tel:+${wa}`}>{t("appeler")}</a>}
+                  {ecoleInfo.adresse && <a className="pf-act" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ecoleInfo.nom || ECOLE.nom} ${ecoleInfo.adresse}`)}`} target="_blank" rel="noreferrer">{t("itineraire")}</a>}
+                </div>
+              </section>
+            )}
 
-            <button className="block" onClick={deconnecter}>Se déconnecter</button>
+            <section className="pf-card">
+              <div className="pf-head"><Ico d={ICONES.paiements} /><b>{t("securite")}</b>{!secu && <button className="small pf-edit" onClick={() => { setSecuMsg(""); setSecu({ nouveau: "" }); }}>{t("changer_code")}</button>}</div>
+              <div className="pf-row"><span>{t("derniere")}</span><b>{res.derniere_connexion ? new Date(res.derniere_connexion).toLocaleString(lang === "de" ? "de-DE" : "fr-FR", { dateStyle: "medium", timeStyle: "short" }) : t("premiere")}</b></div>
+              {secu && (
+                <form onSubmit={enregistrerCode} style={{ padding: "6px 18px 18px" }}>
+                  <label htmlFor="sc-n">{t("nouveau_code")}</label>
+                  <input id="sc-n" value={secu.nouveau} autoComplete="new-password" onChange={(e) => setSecu({ nouveau: e.target.value })} />
+                  <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                    <button className="primary" disabled={busy || secu.nouveau.trim().length < 6}>{t("enregistrer")}</button>
+                    <button type="button" onClick={() => setSecu(null)}>{t("annuler")}</button>
+                  </div>
+                </form>
+              )}
+              {secuMsg && <p className={secuMsg.startsWith("Code d'accès modifié") ? "sit-note" : "badge bad"} style={{ margin: 0, padding: "10px 18px 14px", display: "block", color: secuMsg.startsWith("Code d'accès modifié") ? "var(--ok)" : undefined }}>{secuMsg}</p>}
+            </section>
+
+            <section className="pf-card">
+              <div className="pf-head"><Ico d={ICONES.profil} /><b>{t("prefs")}</b></div>
+              <div className="pf-row"><span>{t("theme")}</span>
+                <div className="pf-seg"><button type="button" className={theme === "clair" ? "on" : ""} onClick={() => choisirTheme("clair")}>{t("clair")}</button><button type="button" className={theme === "sombre" ? "on" : ""} onClick={() => choisirTheme("sombre")}>{t("sombre")}</button></div>
+              </div>
+              <div className="pf-row"><span>{t("langue")}</span>
+                <div className="pf-seg"><button type="button" className={lang === "fr" ? "on" : ""} onClick={() => choisirLang("fr")}>Français</button><button type="button" className={lang === "de" ? "on" : ""} onClick={() => choisirLang("de")}>Deutsch</button></div>
+              </div>
+            </section>
+
+            <button className="block" onClick={deconnecter}>{t("deconnexion")}</button>
 
               </>
             )}
 
             <nav className="sit-tabs" aria-label="Navigation">
-              {ONGLETS.map(([k, label]) => (
-                <button key={k} className={onglet === k ? "on" : ""} onClick={() => aller(k)} aria-current={onglet === k ? "page" : undefined}><Ico d={ICONES[k]} />{label}</button>
+              {ONGLETS.map((k) => (
+                <button key={k} className={onglet === k ? "on" : ""} onClick={() => aller(k)} aria-current={onglet === k ? "page" : undefined}><span className="pf-ico"><Ico d={ICONES[k]} />{k === "profil" && completion < 100 && <i className="pf-dot" aria-label="Profil incomplet" />}</span>{t(k)}</button>
               ))}
             </nav>
           </>

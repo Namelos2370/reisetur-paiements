@@ -1,0 +1,3 @@
+-- Déjà appliqué sur la base (migration profil_etudiant_v12_identite_photo_securite).
+-- Ajoute : etudiants.date_naissance, lieu_naissance, nationalite, photo, derniere_connexion, connexion_precedente ;
+-- fonctions _auth_etudiant, maj_mes_identite, maj_ma_photo, changer_mon_code ; ma_situation renvoie identité, photo, dernière connexion.
