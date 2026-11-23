@@ -254,13 +254,21 @@ export async function attestationNiveauPdf(a) {
   doc.line(60, y + 25, W - 60, y + 25);
   y += 34;
 
-  // Médaillon du niveau
-  const cy = y + 10;
-  doc.setFillColor(...BLEU); doc.circle(W / 2, cy, 11, "F");
-  doc.setDrawColor(...OR); doc.setLineWidth(0.9); doc.circle(W / 2, cy, 13.5);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(255, 255, 255);
-  centre(String(a.niveau), cy + 3.5);
-  y = cy + 23;
+  // Échelle des niveaux : seul le niveau concerné est en couleur
+  const niveaux = ["A1", "A2", "B1", "B2", "C1"], pas = 27, x0n = W / 2 - (pas * (niveaux.length - 1)) / 2, cy = y + 11;
+  niveaux.forEach((n, i) => {
+    const x = x0n + i * pas, actif = n === String(a.niveau).toUpperCase();
+    if (i > 0) { doc.setDrawColor(215, 220, 230); doc.setLineWidth(0.5); doc.line(x - pas + (actif ? 8 : 9.5), cy, x - (actif ? 11 : 9.5), cy); }
+    if (actif) {
+      doc.setFillColor(...BLEU); doc.circle(x, cy, 9.5, "F");
+      doc.setDrawColor(...OR); doc.setLineWidth(0.9); doc.circle(x, cy, 12);
+    } else {
+      doc.setFillColor(235, 238, 244); doc.circle(x, cy, 8, "F");
+    }
+    doc.setFont("helvetica", "bold"); doc.setFontSize(actif ? 15 : 11); doc.setTextColor(...(actif ? [255, 255, 255] : [165, 172, 186]));
+    doc.text(n, x, cy + (actif ? 2.4 : 1.8), { align: "center" });
+  });
+  y = cy + 24;
 
   // Corps
   doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(...GR);
@@ -284,9 +292,9 @@ export async function attestationNiveauPdf(a) {
   const max = a.max || 80;
   const pct = a.note != null && a.note !== "" ? `${((Number(a.note) / max) * 100).toFixed(1).replace(".", ",")} %` : null;
   const boites = [
-    ...(a.note != null && a.note !== "" ? [["SCORE TOTAL", noteSur80(a.note, max)]] : []),
+    ...(a.note != null && a.note !== "" ? [["NOTE FINALE", noteSur80(a.note, max)]] : []),
     ...(pct ? [["POURCENTAGE", pct]] : []),
-    ...(a.mention ? [["MENTION", a.mention]] : []),
+    ...(a.mention ? [["OBSERVATIONS", a.mention]] : []),
   ];
   if (boites.length) {
     const bw = 48, gap = 6, total = boites.length * bw + (boites.length - 1) * gap;
@@ -299,20 +307,8 @@ export async function attestationNiveauPdf(a) {
     y += 25;
   }
 
-  // Modules (facultatif)
-  if (Array.isArray(a.modules) && a.modules.length) {
-    const n = a.modules.length, cw = Math.min(30, (W - 50) / n), tw = cw * n, x0 = (W - tw) / 2;
-    a.modules.forEach((m, i) => {
-      const x = x0 + i * cw;
-      doc.setFillColor(...(i % 2 ? [255, 255, 255] : [246, 248, 252])); doc.setDrawColor(221, 227, 238); doc.setLineWidth(0.25); doc.rect(x, y, cw, 14, "FD");
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...GR); doc.text(m.m, x + cw / 2, y + 5.2, { align: "center" });
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...TX); doc.text(`${String(+m.pts).replace(".", ",")}/${m.max}`, x + cw / 2, y + 11, { align: "center" });
-    });
-    y += 18;
-  }
-
   // Signature
-  const ys = Math.min(Math.max(y + 10, 222), 240);
+  const ys = Math.min(Math.max(y + 14, 215), 240);
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...TX);
   doc.text(`Fait à ${ECOLE.ville}, le ${dlong(todayIso())}`, W - 25, ys, { align: "right" });
   doc.setFont("helvetica", "bold");

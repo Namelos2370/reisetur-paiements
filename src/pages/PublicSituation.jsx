@@ -170,7 +170,7 @@ export default function PublicSituation() {
     try {
       const { attestationNiveauPdf } = await import("../pdf.js");
       const p = (res.parcours || []).find((x) => x.niveau === r.niveau);
-      await attestationNiveauPdf({ nom: res.nom, matricule: res.matricule, niveau: r.niveau, classe: p?.classe, date_examen: r.date_examen, note: r.note, max: maxModules(r.modules), mention: r.mention, modules: r.modules, naissance: r.releve?.naissance || (res.date_naissance ? fdate(res.date_naissance) + (res.lieu_naissance ? " à " + res.lieu_naissance : "") : undefined) });
+      await attestationNiveauPdf({ nom: res.nom, matricule: res.matricule, niveau: r.niveau, classe: p?.classe, date_examen: r.date_examen, note: r.note, max: maxModules(r.modules), mention: r.mention, naissance: r.releve?.naissance || (res.date_naissance ? fdate(res.date_naissance) + (res.lieu_naissance ? " à " + res.lieu_naissance : "") : undefined) });
     } catch { setErr("L'attestation n'a pas pu être générée. Réessaie dans un instant."); }
     setPdfBusy("");
   };
