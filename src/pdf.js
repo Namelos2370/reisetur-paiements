@@ -228,59 +228,104 @@ export async function attestationPdf(a) {
 export async function attestationNiveauPdf(a) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const W = 210;
-  entete(doc, await loadLogo());
+  const W = 210, H = 297, OR = [176, 141, 60], TX = [20, 32, 51], GR = [100, 112, 130];
+  const logo = await loadLogo();
+  const centre = (t, y, opt = {}) => doc.text(t, W / 2, y, { align: "center", ...opt });
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(20, 32, 51);
-  doc.text("ATTESTATION DE NIVEAU", W / 2, 64, { align: "center" });
-  doc.setDrawColor(...BLEU);
-  doc.setLineWidth(0.7);
-  doc.line(65, 69, W - 65, 69);
+  // Cadre : double filet bleu / or
+  doc.setDrawColor(...BLEU); doc.setLineWidth(1.4); doc.rect(8, 8, W - 16, H - 16);
+  doc.setDrawColor(...OR); doc.setLineWidth(0.5); doc.rect(11.5, 11.5, W - 23, H - 23);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12.5);
-  doc.setTextColor(20, 32, 51);
-  const intro = `Je soussigné(e), ${ECOLE.directeur || "la Direction"}, ${ECOLE.directeur ? ECOLE.direction + ", " : ""}atteste que :`;
-  doc.text(doc.splitTextToSize(intro, W - 50), 25, 88);
+  // En-tête : logo + centre
+  let y = 20;
+  if (logo) { const h = 20, w = Math.min(40, (h * logo.w) / logo.h); doc.addImage(logo.data, logo.fmt, (W - w) / 2, y, w, h); y += h + 8; } else y += 6;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.setTextColor(...BLEU); centre(ECOLE.nom, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...GR);
+  centre([ECOLE.sousTitre, ECOLE.adresse].filter(Boolean).join("  ·  "), y + 5.5);
+  if (ECOLE.contact) centre(ECOLE.contact, y + 10.5);
+  y += 15;
 
-  const rows = [
-    ["Nom et prénoms", a.nom],
-    ["Matricule", a.matricule],
-    ["Niveau validé", `Langue allemande - niveau ${a.niveau}`],
-    ...(a.classe ? [["Classe", a.classe]] : []),
-    ...(a.date_examen ? [["Date de l'examen", dlong(a.date_examen)]] : []),
-    ...(a.note != null && a.note !== "" ? [["Note", noteSur80(a.note, a.max || 80)]] : []),
-    ...(a.mention ? [["Mention", a.mention]] : []),
+  // Titre
+  doc.setDrawColor(...OR); doc.setLineWidth(0.6); doc.line(60, y, W - 60, y);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(24); doc.setTextColor(...TX);
+  centre("ATTESTATION DE RÉUSSITE", y + 13);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...GR);
+  centre(`Langue allemande · Niveau ${a.niveau} du Cadre européen commun de référence`, y + 20);
+  doc.line(60, y + 25, W - 60, y + 25);
+  y += 34;
+
+  // Médaillon du niveau
+  const cy = y + 10;
+  doc.setFillColor(...BLEU); doc.circle(W / 2, cy, 11, "F");
+  doc.setDrawColor(...OR); doc.setLineWidth(0.9); doc.circle(W / 2, cy, 13.5);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(255, 255, 255);
+  centre(String(a.niveau), cy + 3.5);
+  y = cy + 23;
+
+  // Corps
+  doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(...GR);
+  centre(`La Direction de ${ECOLE.nom} certifie que`, y);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...TX);
+  centre(a.nom, y + 12);
+  doc.setDrawColor(...BLEU); doc.setLineWidth(0.4); doc.line(50, y + 16, W - 50, y + 16);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(...GR);
+  let sous = `Matricule ${a.matricule}`;
+  if (a.naissance) sous += `  ·  Né(e) le ${a.naissance}`;
+  centre(sous, y + 22.5);
+  y += 31;
+
+  doc.setFontSize(11.5); doc.setTextColor(...TX);
+  const date = a.date_examen ? ` du ${dlong(a.date_examen)}` : "";
+  const corps = `a suivi la formation de langue allemande au sein du centre ${ECOLE.nom}${a.classe ? ` (classe ${a.classe})` : ""} et a satisfait à l'ensemble des épreuves de l'examen final (Abschlusstest)${date}, validant ainsi le niveau ${a.niveau}.`;
+  doc.text(doc.splitTextToSize(corps, W - 56), W / 2, y, { align: "center", lineHeightFactor: 1.45 });
+  y += 24;
+
+  // Résultats
+  const max = a.max || 80;
+  const pct = a.note != null && a.note !== "" ? `${((Number(a.note) / max) * 100).toFixed(1).replace(".", ",")} %` : null;
+  const boites = [
+    ...(a.note != null && a.note !== "" ? [["SCORE TOTAL", noteSur80(a.note, max)]] : []),
+    ...(pct ? [["POURCENTAGE", pct]] : []),
+    ...(a.mention ? [["MENTION", a.mention]] : []),
   ];
-  let y = 104;
-  rows.forEach(([k, v]) => {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11.5);
-    doc.setTextColor(100, 112, 130);
-    doc.text(k, 25, y);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 32, 51);
-    doc.text(String(v), 80, y);
-    doc.setDrawColor(221, 227, 238);
-    doc.setLineWidth(0.3);
-    doc.line(25, y + 4, W - 25, y + 4);
-    y += 12;
-  });
+  if (boites.length) {
+    const bw = 48, gap = 6, total = boites.length * bw + (boites.length - 1) * gap;
+    boites.forEach(([k, v], i) => {
+      const x = (W - total) / 2 + i * (bw + gap);
+      doc.setFillColor(243, 246, 252); doc.setDrawColor(...BLEU); doc.setLineWidth(0.4); doc.roundedRect(x, y, bw, 19, 2, 2, "FD");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.setTextColor(...GR); doc.text(k, x + bw / 2, y + 6.5, { align: "center" });
+      doc.setFontSize(13.5); doc.setTextColor(...BLEU); doc.text(v, x + bw / 2, y + 14.5, { align: "center" });
+    });
+    y += 25;
+  }
 
-  y += 8;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12.5);
-  doc.setTextColor(20, 32, 51);
-  const corps = `a suivi la formation de langue allemande au centre ${ECOLE.nom} et a réussi l'examen du niveau ${a.niveau}. La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.`;
-  doc.text(doc.splitTextToSize(corps, W - 50), 25, y, { lineHeightFactor: 1.5 });
+  // Modules (facultatif)
+  if (Array.isArray(a.modules) && a.modules.length) {
+    const n = a.modules.length, cw = Math.min(30, (W - 50) / n), tw = cw * n, x0 = (W - tw) / 2;
+    a.modules.forEach((m, i) => {
+      const x = x0 + i * cw;
+      doc.setFillColor(...(i % 2 ? [255, 255, 255] : [246, 248, 252])); doc.setDrawColor(221, 227, 238); doc.setLineWidth(0.25); doc.rect(x, y, cw, 14, "FD");
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...GR); doc.text(m.m, x + cw / 2, y + 5.2, { align: "center" });
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...TX); doc.text(`${String(+m.pts).replace(".", ",")}/${m.max}`, x + cw / 2, y + 11, { align: "center" });
+    });
+    y += 18;
+  }
 
-  signature(doc, Math.max(y + 40, 195));
+  // Signature
+  const ys = Math.min(Math.max(y + 10, 222), 240);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...TX);
+  doc.text(`Fait à ${ECOLE.ville}, le ${dlong(todayIso())}`, W - 25, ys, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.text(ECOLE.direction, W - 60, ys + 9, { align: "center" });
+  doc.setDrawColor(90, 100, 120); doc.setLineWidth(0.3); doc.line(W - 90, ys + 30, W - 30, ys + 30);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...GR);
+  doc.text(ECOLE.directeur ? ECOLE.directeur : "Signature et cachet", W - 60, ys + 35, { align: "center" });
 
-  doc.setFontSize(8.5);
-  doc.setTextColor(120, 130, 150);
-  doc.text(`Attestation éditée le ${dlong(todayIso())} - ${ECOLE.nom}`, W / 2, 287, { align: "center" });
+  // Pied : numéro de référence + mention d'usage
+  const ref = `ATT-${String(a.niveau).toUpperCase()}-${String(a.matricule || "").replace(/\D/g, "").slice(-5)}-${String(a.date_examen || todayIso()).replace(/-/g, "")}`;
+  doc.setFontSize(8); doc.setTextColor(120, 130, 150);
+  doc.text(`Référence : ${ref}`, 25, ys + 35);
+  centre("Document délivré à l'intéressé(e) pour servir et valoir ce que de droit.", H - 17);
 
   doc.save(`Attestation_niveau_${slug(a.niveau)}_${slug(a.matricule || a.nom)}.pdf`);
 }
