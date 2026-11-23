@@ -251,7 +251,7 @@ export async function attestationNiveauPdf(a) {
     ["Niveau validé", `Langue allemande - niveau ${a.niveau}`],
     ...(a.classe ? [["Classe", a.classe]] : []),
     ...(a.date_examen ? [["Date de l'examen", dlong(a.date_examen)]] : []),
-    ...(a.note != null && a.note !== "" ? [["Note", noteSur80(a.note)]] : []),
+    ...(a.note != null && a.note !== "" ? [["Note", noteSur80(a.note, a.max || 80)]] : []),
     ...(a.mention ? [["Mention", a.mention]] : []),
   ];
   let y = 104;
@@ -542,7 +542,7 @@ export async function releveNotesPdf(a) {
   doc.text("Module", X[0] + 4, y + 7.8);
   ["Points obtenus", "Maximum", "%", "Résultat"].forEach((t, i) => doc.text(t, cx(i + 1), y + 7.8, { align: "center" }));
   y += 12.7;
-  const rowH = 13.9;
+  const rowH = Math.min(13.9, (201.5 - y - 14.7) / Math.max(modules.length, 1)); // 5 modules : lignes plus compactes
   modules.forEach((m, i) => {
     doc.setFillColor(...(i % 2 ? [244, 244, 244] : [255, 255, 255])); doc.rect(L, y, W, rowH, "F");
     doc.setDrawColor(221, 221, 221); doc.setLineWidth(0.25); doc.rect(L, y, W, rowH);

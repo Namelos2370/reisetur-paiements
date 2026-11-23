@@ -97,10 +97,12 @@ export const refLabel = (m) =>
 export const refHint = (m) => (m === "banque" ? "N° inscrit sur le bordereau" : m === "orange_money" || m === "mtn_momo" ? "ex. MP2610241234.AB12" : "");
 
 // Note d'examen : total sur 80 points, virgule décimale (61.5 → « 61,5/80 »)
-export const noteSur80 = (n) => `${String(+n).replace(".", ",")}/80`;
+// Total sur le maximum du barème : déduit des modules quand ils sont connus (75 depuis le 21/11/2026, 80 avant), sinon 80.
+export const maxModules = (modules) => (Array.isArray(modules) && modules.length ? modules.reduce((s, m) => s + (m.max || 0), 0) : 0) || 80;
+export const noteSur80 = (n, max = 80) => `${String(+n).replace(".", ",")}/${max}`;
 
 // Modules de l'examen final (points maximum). Un module est validé dès 50 % des points.
-export const MODULES_EXAMEN = [["Lesen", 15], ["Hören", 15], ["Schreiben", 20], ["Sprechen", 30]];
+export const MODULES_EXAMEN = [["Lesen", 15], ["Hören", 15], ["Schreiben", 15], ["Grammatik", 15], ["Sprechen", 15]]; // total 75 (Schreiben = Teil 1 /5 + Teil 2 /10)
 // Rattrapage : un module repassé garde son score initial et reçoit { ratt: { pts, max } } (barème propre au rattrapage).
 export const RATT_MAX = { Lesen: 12, "Hören": 12, Sprechen: 15 };
 export const noteModule = (m) => (m.ratt ? { pts: m.ratt.pts, max: m.ratt.max } : { pts: m.pts, max: m.max });

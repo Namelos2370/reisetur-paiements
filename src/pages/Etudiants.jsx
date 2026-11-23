@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sb, q } from "../supabase.js";
-import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80, MODULES_EXAMEN, modulesARepasser, fpts, RATT_MAX, bilanModules, noteModule } from "../utils.js";
+import { echeancesDepuisDebut, fcfa, fdate, GLOBAL, modeLabel, STAT, TYPE, today, noteSur80, maxModules, MODULES_EXAMEN, modulesARepasser, fpts, RATT_MAX, bilanModules, noteModule } from "../utils.js";
 import { Badge, Loading, Modal, useAction, useLoad, useToast } from "../components/ui.jsx";
 import ImportEtudiants from "../components/ImportEtudiants.jsx";
 import { telechargerRecu, waLink, waNumber } from "../data.js";
@@ -236,7 +236,7 @@ function Resultats({ etudiant }) {
                 <tr key={r.id}>
                   <td><b>{r.niveau}</b></td>
                   <td>{r.date_examen ? fdate(r.date_examen) : "—"}</td>
-                  <td>{r.note != null ? noteSur80(r.note) : "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
+                  <td>{r.note != null ? noteSur80(r.note, maxModules(r.modules)) : "—"}{r.mention ? <><br /><span className="muted">{r.mention}</span></> : null}</td>
                   <td><Badge def={STATUT_RES[r.statut]} />{modulesARepasser(r.modules).length > 0 && <><br /><span className="muted">À repasser : {modulesARepasser(r.modules).map((m) => m.m).join(", ")}</span></>}</td>
                   <td className="actions">
                     <button className="small" onClick={() => setF({ niveau: r.niveau, date_examen: r.date_examen || "", note: r.note ?? "", mention: r.mention || "", statut: r.statut, pts: Object.fromEntries((r.modules || []).map((m) => [m.m, m.pts])), ratt: Object.fromEntries((r.modules || []).filter((m) => m.ratt).map((m) => [m.m, m.ratt.pts])) })}>Modifier</button>
@@ -256,7 +256,7 @@ function Resultats({ etudiant }) {
         </div>
         <div className="row">
           <div><label htmlFor="rs-d">Date de l'examen</label><input id="rs-d" type="date" value={f.date_examen} onChange={set("date_examen")} /></div>
-          <div><label htmlFor="rs-no">Total des points, sur 80 <span className="muted">(facultatif)</span></label><input id="rs-no" type="number" step="0.01" min="0" value={f.note} onChange={set("note")} /></div>
+          <div><label htmlFor="rs-no">Total des points, sur 75 <span className="muted">(facultatif)</span></label><input id="rs-no" type="number" step="0.01" min="0" value={f.note} onChange={set("note")} /></div>
         </div>
         <p className="muted" style={{ margin: "12px 0 4px" }}>Points par module <span className="muted">(facultatif — un module sous 50 % est à repasser et l'étudiant en est informé dans son espace)</span></p>
         <div className="row">

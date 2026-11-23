@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { sb } from "../supabase.js";
 import { ECOLE, appliquerEcole } from "../config.js";
-import { fcfa, fdate, modeLabel, noteSur80, moduleValide, modulesARepasser, fpts, attestationPossible, noteModule } from "../utils.js";
+import { fcfa, fdate, modeLabel, noteSur80, maxModules, moduleValide, modulesARepasser, fpts, attestationPossible, noteModule } from "../utils.js";
 import { waNumber } from "../data.js";
 import { Badge } from "../components/ui.jsx";
 
@@ -170,7 +170,7 @@ export default function PublicSituation() {
     try {
       const { attestationNiveauPdf } = await import("../pdf.js");
       const p = (res.parcours || []).find((x) => x.niveau === r.niveau);
-      await attestationNiveauPdf({ nom: res.nom, matricule: res.matricule, niveau: r.niveau, classe: p?.classe, date_examen: r.date_examen, note: r.note, mention: r.mention });
+      await attestationNiveauPdf({ nom: res.nom, matricule: res.matricule, niveau: r.niveau, classe: p?.classe, date_examen: r.date_examen, note: r.note, max: maxModules(r.modules), mention: r.mention });
     } catch { setErr("L'attestation n'a pas pu être générée. Réessaie dans un instant."); }
     setPdfBusy("");
   };
@@ -460,7 +460,7 @@ export default function PublicSituation() {
                       </div>
                       <div className="sit-row-bot" style={{ marginTop: 6 }}>
                         <span>{p?.classe || ""}{p?.debut ? ` · depuis le ${fdate(p.debut)}` : ""}</span>
-                        {r && (r.note != null || r.mention) && <span>{r.note != null ? `Note ${noteSur80(r.note)}` : ""}{r.note != null && r.mention ? " · " : ""}{r.mention || ""}</span>}
+                        {r && (r.note != null || r.mention) && <span>{r.note != null ? `Note ${noteSur80(r.note, maxModules(r.modules))}` : ""}{r.note != null && r.mention ? " · " : ""}{r.mention || ""}</span>}
                       </div>
                       {r?.modules?.length > 0 && (
                         <div className="sit-mod">
