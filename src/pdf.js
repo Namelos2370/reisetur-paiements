@@ -30,16 +30,22 @@ async function loadLogo() {
         fr.onload = () => res(fr.result);
         fr.readAsDataURL(blob);
       });
-      const dims = await new Promise((res) => {
+      // Logo réduit (360 px max, JPEG sur fond blanc) pour alléger les PDF
+      const logo = await new Promise((res) => {
         const im = new Image();
-        im.onload = () => res({ w: im.width, h: im.height });
+        im.onload = () => {
+          try {
+            const k = Math.min(1, 360 / Math.max(im.width, im.height));
+            const w = Math.round(im.width * k), h = Math.round(im.height * k);
+            const c = document.createElement("canvas"); c.width = w; c.height = h;
+            const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.drawImage(im, 0, 0, w, h);
+            res({ data: c.toDataURL("image/jpeg", 0.85), fmt: "JPEG", w, h });
+          } catch { res({ data, fmt: (/^data:image\/(\w+)/.exec(data)?.[1] || "png").toUpperCase().replace("JPG", "JPEG"), w: im.width, h: im.height }); }
+        };
         im.onerror = () => res(null);
         im.src = data;
       });
-      if (dims) {
-        const fmt = (/^data:image\/(\w+)/.exec(data)?.[1] || "png").toUpperCase().replace("JPG", "JPEG");
-        logoCache = { data, fmt, ...dims };
-      }
+      if (logo) logoCache = logo;
     }
   } catch { /* pas de logo : on continue sans */ }
   return logoCache;
@@ -90,7 +96,7 @@ function signature(doc, y) {
 // ---- Reçu de paiement ----
 export async function recuPdf(r) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const W = 210;
   entete(doc, await loadLogo());
 
@@ -167,7 +173,7 @@ export async function recuPdf(r) {
 // ---- Attestation d'inscription ----
 export async function attestationPdf(a) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const W = 210;
   entete(doc, await loadLogo());
 
@@ -227,7 +233,7 @@ export async function attestationPdf(a) {
 // ---- Attestation de réussite de niveau ----
 export async function attestationNiveauPdf(a) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const W = 210, H = 297, OR = [176, 141, 60], TX = [20, 32, 51], GR = [100, 112, 130];
   const logo = await loadLogo();
   const centre = (t, y, opt = {}) => doc.text(t, W / 2, y, { align: "center", ...opt });
@@ -336,7 +342,7 @@ const hm = (min) => `${String(Math.floor(min / 60)).padStart(2, "0")}h${String(m
 
 export async function invitationExamenPdf(a) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const W = 210;
   entete(doc, await loadLogo());
   doc.setFont("helvetica", "bold"); doc.setFontSize(19); doc.setTextColor(20, 32, 51);
@@ -512,7 +518,7 @@ function noteUnePage(doc, logo, it) {
 export async function notesPdf(items, titre = "") {
   if (!items.length) return;
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const logo = await loadLogo();
   items.forEach((it, i) => {
     if (i) doc.addPage();
@@ -529,7 +535,7 @@ export async function notesPdf(items, titre = "") {
 const NOIR = [42, 42, 42], VERT = [39, 174, 96], ROUGE = [192, 57, 43];
 export async function releveNotesPdf(a) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const logo = await loadLogo();
   const L = 20, R = 190, W = R - L;
   const reussi = a.statut === "reussi";
